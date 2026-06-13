@@ -263,12 +263,12 @@
         .empty-state h3 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
         .empty-state p { font-size: 13px; }
 
-        .debug-banner {
-            background: #fef3c7; border: 1px solid #fde68a; border-radius: var(--radius-sm);
-            padding: 10px 14px; font-size: 11px; color: #92400e; font-family: monospace;
-            margin-bottom: 16px; display: none;
+        .api-status {
+            display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; margin-left: 12px;
         }
-        .debug-banner.active { display: block; }
+        .api-status.online { background: #d1fae5; color: #065f46; }
+        .api-status.offline { background: #fee2e2; color: #991b1b; }
+        .api-status.checking { background: #fef3c7; color: #92400e; }
 
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -280,6 +280,7 @@
             .main { margin-left: 180px; padding: 16px 20px; }
         }
     </style>
+<base target="_blank">
 </head>
 <body>
     <div class="app">
@@ -326,15 +327,16 @@
         <!-- Main Content -->
         <main class="main">
 
-            <!-- DEBUG BANNER -->
-            <div class="debug-banner" id="debugBanner">
-                <strong>DEBUG:</strong> <span id="debugText"></span>
-            </div>
-
             <!-- SCREEN: DASHBOARD -->
             <div id="dashboard" class="screen active">
                 <div class="page-header">
-                    <div><h2>Dashboard</h2><p>Recent screening activity</p></div>
+                    <div style="display:flex;align-items:center;">
+                        <div>
+                            <h2>Dashboard</h2>
+                            <p>Recent screening activity</p>
+                        </div>
+                        <div class="api-status checking" id="apiStatus">● Checking API...</div>
+                    </div>
                     <div class="header-actions">
                         <button class="btn btn-primary btn-sm" onclick="navTo('screening')">+ New Screening</button>
                     </div>
@@ -775,17 +777,18 @@
 
     <script>
     // ═══════════════════════════════════════════════════════
-    //  COGNYSIS SPA CLIENT — Upload + Call Dual Flow
+    //  COGNYSIS API CONFIG — EDIT THIS LINE IF NEEDED
     // ═══════════════════════════════════════════════════════
-    const API = "http://localhost:8000";  // <-- CHANGE THIS
+    // Hugging Face Spaces URL format: https://<username>-<space-name>.hf.space
+    const API = "https://davyanh-cognysis-api.hf.space";
 
     // ─── STATE ─────────────────────────────────────────────
     let state = {
         patient: { id: null, first: "", last: "", age: 0, sex: "", edu: 0, lang: "" },
         screening: null,
         history: [],
-        selectedFile: null,      // for audio-capture screen
-        selectedFileOnly: null   // for screening-upload screen
+        selectedFile: null,
+        selectedFileOnly: null
     };
 
     // ─── NAVIGATION ──────────────────────────────────────
@@ -805,15 +808,6 @@
         setTimeout(() => t.classList.remove('show'), 4000);
     }
 
-    // ─── DEBUG BANNER ────────────────────────────────────
-    function showDebug(msg) {
-        const banner = document.getElementById('debugBanner');
-        const text = document.getElementById('debugText');
-        text.textContent = msg;
-        banner.classList.add('active');
-        console.log('[COGNYSIS DEBUG]', msg);
-    }
-
     // ─── SPINNER ─────────────────────────────────────────
     function setSpinner(show, text = '') {
         const s = document.getElementById('spinner');
@@ -821,13 +815,40 @@
         s.classList.toggle('active', show);
     }
 
+    // ─── API HEALTH CHECK ────────────────────────────────
+    async function checkApiHealth() {
+        const statusEl = document.getElementById('apiStatus');
+        try {
+            const res = await fetch(`${API}/`, { method: 'GET', headers: { 'Accept': 'application/json' } });
+            if (res.ok) {
+                statusEl.textContent = '● API Online';
+                statusEl.className = 'api-status online';
+            } else {
+                statusEl.textContent = '● API Error ' + res.status;
+                statusEl.className = 'api-status offline';
+            }
+        } catch (e) {
+            statusEl.textContent = '● API Offline';
+            statusEl.className = 'api-status offline';
+        }
+    }
+
     // ─── NETWORK ERROR DIAGNOSTICS ───────────────────────
     function diagnoseFetchError(error, url) {
         let diagnosis = '';
         if (error.message.includes('Failed to fetch')) {
-            diagnosis = `Cannot reach ${url}. \n\nLIKELY CAUSES:\n1. Backend is not running\n2. CORS blocked (add CORS middleware to backend)\n3. Wrong API URL (currently: ${API})\n4. Opening HTML via file:// (use a local server)`;
+            diagnosis = `Cannot reach ${url}. 
+
+LIKELY CAUSES:
+1. Backend is not running
+2. CORS blocked (add CORS middleware to backend)
+3. Wrong API URL (currently: ${API})
+4. Opening HTML via file:// (use a local server)`;
         } else if (error.message.includes('CORS')) {
-            diagnosis = 'CORS Policy Blocked. Add this to your FastAPI backend:\n\nfrom fastapi.middleware.cors import CORSMiddleware\napp.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])';
+            diagnosis = 'CORS Policy Blocked. Add this to your FastAPI backend:
+
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])';
         } else {
             diagnosis = `Network error: ${error.message}`;
         }
@@ -851,21 +872,20 @@
         const endpoint = `${API}/patients`;
         const queryParams = `first_name=${encodeURIComponent(first)}&last_name=${encodeURIComponent(last)}&age=${age}&sex=${encodeURIComponent(sex)}&education=${edu}&language=${encodeURIComponent(lang)}`;
         const fullUrl = `${endpoint}?${queryParams}`;
-        
-        showDebug(`POST ${fullUrl}`);
+
         setSpinner(true, 'Creating patient record...');
 
         try {
-            const res = await fetch(fullUrl, { 
+            const res = await fetch(fullUrl, {
                 method: 'POST',
                 headers: { 'Accept': 'application/json' }
             });
-            
+
             if (!res.ok) {
                 const errText = await res.text().catch(() => 'Unknown error');
                 throw new Error(`HTTP ${res.status}: ${errText}`);
             }
-            
+
             const data = await res.json();
             state.patient = { id: data.id, first, last, age, sex, edu, lang };
 
@@ -883,8 +903,8 @@
             showToast(`Patient ${first} ${last} registered`);
         } catch (e) {
             const diagnosis = diagnoseFetchError(e, fullUrl);
-            showDebug(diagnosis);
-            showToast(diagnosis.split('\n')[0], 'error');
+            showToast(diagnosis.split('
+')[0], 'error');
             console.error(e);
         } finally {
             setSpinner(false);
@@ -913,33 +933,32 @@
         const endpoint = `${API}/patients`;
         const queryParams = `first_name=${encodeURIComponent(first)}&last_name=${encodeURIComponent(last)}&age=${age}&sex=${encodeURIComponent(sex)}&education=${edu}&language=${encodeURIComponent(lang)}`;
         const fullUrl = `${endpoint}?${queryParams}`;
-        
-        showDebug(`POST ${fullUrl}`);
+
         setSpinner(true, 'Creating patient record...');
 
         try {
-            const res = await fetch(fullUrl, { 
+            const res = await fetch(fullUrl, {
                 method: 'POST',
                 headers: { 'Accept': 'application/json' }
             });
-            
+
             if (!res.ok) {
                 const errText = await res.text().catch(() => 'Unknown error');
                 throw new Error(`HTTP ${res.status}: ${errText}`);
             }
-            
+
             const data = await res.json();
             state.patient = { id: data.id, first, last, age, sex, edu, lang };
 
             showToast(`Patient ${first} ${last} registered. Starting upload...`);
-            
+
             // Immediately proceed to upload
             await processAudioUpload(state.selectedFileOnly);
-            
+
         } catch (e) {
             const diagnosis = diagnoseFetchError(e, fullUrl);
-            showDebug(diagnosis);
-            showToast(diagnosis.split('\n')[0], 'error');
+            showToast(diagnosis.split('
+')[0], 'error');
             console.error(e);
             setSpinner(false);
         }
@@ -952,7 +971,7 @@
 
         const validExts = ['.wav','.mp3','.m4a','.webm','.ogg','.mp4'];
         const hasValidExt = validExts.some(ext => file.name.toLowerCase().endsWith(ext));
-        
+
         if (!hasValidExt) {
             showToast('Please select a valid audio file (WAV, MP3, M4A, WEBM, OGG)', 'error');
             input.value = '';
@@ -983,7 +1002,7 @@
 
         const validExts = ['.wav','.mp3','.m4a','.webm','.ogg','.mp4'];
         const hasValidExt = validExts.some(ext => file.name.toLowerCase().endsWith(ext));
-        
+
         if (!hasValidExt) {
             showToast('Please select a valid audio file (WAV, MP3, M4A, WEBM, OGG)', 'error');
             input.value = '';
@@ -1027,8 +1046,7 @@
     // ─── CORE UPLOAD LOGIC ────────────────────────────────
     async function processAudioUpload(file) {
         const endpoint = `${API}/screen`;
-        showDebug(`POST ${endpoint} (file: ${file.name}, ${formatFileSize(file.size)})`);
-        
+
         navTo('feature-extraction');
         runPipelineAnimation();
         setSpinner(true, 'Uploading and analyzing audio...');
@@ -1037,17 +1055,17 @@
             const formData = new FormData();
             formData.append('file', file);
 
-            const res = await fetch(endpoint, { 
-                method: 'POST', 
+            const res = await fetch(endpoint, {
+                method: 'POST',
                 body: formData,
                 headers: { 'Accept': 'application/json' }
             });
-            
+
             if (!res.ok) {
                 const errText = await res.text().catch(() => 'Unknown error');
                 throw new Error(`HTTP ${res.status}: ${errText}`);
             }
-            
+
             const data = await res.json();
             state.screening = data;
 
@@ -1060,8 +1078,8 @@
             showToast('Analysis complete');
         } catch (e) {
             const diagnosis = diagnoseFetchError(e, endpoint);
-            showDebug(diagnosis);
-            showToast(diagnosis.split('\n')[0], 'error');
+            showToast(diagnosis.split('
+')[0], 'error');
             console.error(e);
             navTo('audio-capture');
         } finally {
@@ -1071,9 +1089,9 @@
 
     // ─── DRAG & DROP SUPPORT (both upload areas) ───────────
     document.addEventListener('DOMContentLoaded', () => {
+        checkApiHealth();
         loadHistory();
-        showDebug(`API set to: ${API}. If this is wrong, edit the API constant in the script.`);
-        
+
         // Initialize both upload areas
         ['uploadArea', 'uploadAreaOnly'].forEach(id => {
             const area = document.getElementById(id);
@@ -1319,7 +1337,6 @@
         }
 
         const endpoint = `${API}/screenings`;
-        showDebug(`POST ${endpoint}`);
         setSpinner(true, 'Saving to database...');
 
         try {
@@ -1335,11 +1352,11 @@
                 explanation_json: JSON.stringify(pred.explanation)
             });
 
-            const res = await fetch(`${endpoint}?${params}`, { 
+            const res = await fetch(`${endpoint}?${params}`, {
                 method: 'POST',
                 headers: { 'Accept': 'application/json' }
             });
-            
+
             if (!res.ok) {
                 const errText = await res.text().catch(() => 'Unknown error');
                 throw new Error(`HTTP ${res.status}: ${errText}`);
@@ -1350,8 +1367,8 @@
             showToast('Screening saved to database');
         } catch (e) {
             const diagnosis = diagnoseFetchError(e, endpoint);
-            showDebug(diagnosis);
-            showToast(diagnosis.split('\n')[0], 'error');
+            showToast(diagnosis.split('
+')[0], 'error');
             console.error(e);
         } finally {
             setSpinner(false);
@@ -1362,7 +1379,6 @@
     async function loadHistory() {
         const endpoint = `${API}/screenings`;
         try {
-            showDebug(`GET ${endpoint}`);
             const res = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
             if (!res.ok) return;
             const rows = await res.json();
@@ -1407,7 +1423,6 @@
     // ─── LOAD A SAVED SCREENING ────────────────────────────
     async function loadScreening(id) {
         const endpoint = `${API}/screenings/${id}`;
-        showDebug(`GET ${endpoint}`);
         setSpinner(true, 'Loading screening...');
 
         try {
@@ -1416,7 +1431,7 @@
                 const errText = await res.text().catch(() => 'Unknown error');
                 throw new Error(`HTTP ${res.status}: ${errText}`);
             }
-            
+
             const data = await res.json();
             state.patient = { first: data.patient_name.split(' ')[0], last: data.patient_name.split(' ')[1] || '', age: 0, sex: '', edu: 0, lang: '' };
             state.screening = {
@@ -1436,8 +1451,8 @@
             navTo('results');
         } catch (e) {
             const diagnosis = diagnoseFetchError(e, endpoint);
-            showDebug(diagnosis);
-            showToast(diagnosis.split('\n')[0], 'error');
+            showToast(diagnosis.split('
+')[0], 'error');
             console.error(e);
         } finally {
             setSpinner(false);
@@ -1479,7 +1494,6 @@
         }
 
         const endpoint = `${API}/twilio/call?phone_number=${encodeURIComponent(phone)}&patient_id=${state.patient.id}`;
-        showDebug(`GET ${endpoint}`);
         setSpinner(true, 'Initiating Twilio call...');
 
         try {
@@ -1493,14 +1507,14 @@
             setTimeout(() => pollForTwilioResult(), 30000);
         } catch (e) {
             const diagnosis = diagnoseFetchError(e, endpoint);
-            showDebug(diagnosis);
-            showToast(diagnosis.split('\n')[0], 'error');
+            showToast(diagnosis.split('
+')[0], 'error');
             console.error(e);
         } finally {
             setSpinner(false);
         }
     }
-    
+
     async function pollForTwilioResult() {
         await loadHistory();
         const twilioScreening = state.history.find(s => s.source === 'twilio' && s.patient_name.includes(state.patient.first));
