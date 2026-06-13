@@ -397,10 +397,10 @@
                                 <select id="p-lang" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; background: white;">
                                     <option selected>English (Jamaican)</option><option>Patois / English Mix</option>
                                 </select>
+                            </div>
                             <div>
                                 <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Phone Number (for live calls)</label>
                                 <input type="tel" id="p-phone" value="+18761234567" placeholder="+1 876 123 4567" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;">
-                            </div>
                             </div>
                         </div>
                     </div>
@@ -458,14 +458,25 @@
                     </div>
                     <div class="card">
                         <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-                            <input type="file" id="fileInput" accept="audio/*" onchange="handleUpload(this)">
+                            <input type="file" id="fileInput" accept="audio/wav,audio/mp3,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm" onchange="handleFileSelect(this)">
                             <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
                             <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 8px; font-weight: 600;">Upload Audio File</p>
-                            <p style="font-size: 0.85rem; color: #a0aec0; margin-bottom: 16px;">WAV, MP3, M4A accepted. Max 2 minutes.</p>
-                            <button class="btn btn-secondary">Select File</button>
+                            <p style="font-size: 0.85rem; color: #a0aec0; margin-bottom: 16px;">WAV, MP3, M4A, WEBM accepted. Max 2 minutes.</p>
+                            <button class="btn btn-secondary" type="button">Select File</button>
+                        </div>
+                        <div id="filePreview" style="display: none; margin-top: 16px; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="font-size: 24px;">🎵</div>
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 600;" id="fileName">recording.wav</div>
+                                        <div style="font-size: 11px; color: var(--text-muted);" id="fileSize">2.4 MB</div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary btn-sm" onclick="uploadSelectedFile()">Upload & Analyze</button>
+                            </div>
                         </div>
                     </div>
-                </div></div>
                 </div>
             </div>
 
@@ -656,14 +667,15 @@
     //  COGNYSIS SPA CLIENT — Smooth, State-Driven, DB-Backed
     // ═══════════════════════════════════════════════════════
     // CONFIG: Set this to your HuggingFace backend URL
-// Example: "https://cognysis-api.onrender.com"
-const API = "https://huggingface.co/spaces/davyanh/cognysis-api";
+    // Example: "https://cognysis-api.onrender.com"
+    const API = "https://huggingface.co/spaces/davyanh/cognysis-api";
 
     // ─── STATE ─────────────────────────────────────────────
     let state = {
         patient: { id: null, first: "", last: "", age: 0, sex: "", edu: 0, lang: "" },
         screening: null,  // last API response
-        history: []       // from DB
+        history: [],      // from DB
+        selectedFile: null // holds the file selected for upload
     };
 
     // ─── NAVIGATION ──────────────────────────────────────
@@ -717,6 +729,11 @@ const API = "https://huggingface.co/spaces/davyanh/cognysis-api";
                 <span>${age} yrs</span><span>•</span><span>${sex}</span><span>•</span><span>${edu} yrs education</span><span>•</span><span>${lang}</span>
             `;
 
+            // Reset file upload state
+            state.selectedFile = null;
+            document.getElementById('filePreview').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+
             navTo('audio-capture');
             showToast(`Patient ${first} ${last} registered`);
         } catch (e) {
@@ -726,11 +743,66 @@ const API = "https://huggingface.co/spaces/davyanh/cognysis-api";
         }
     }
 
-    // ─── STEP 2: UPLOAD AUDIO ────────────────────────────
-    async function handleUpload(input) {
+    // ─── STEP 2: FILE SELECTION (Preview) ─────────────────
+    function handleFileSelect(input) {
         const file = input.files[0];
         if (!file) return;
 
+        // Validate file type
+        const validTypes = ['audio/wav','audio/x-wav','audio/mp3','audio/mpeg','audio/mp4','audio/x-m4a','audio/webm','audio/ogg'];
+        const isValid = validTypes.some(t => file.type.includes(t.replace('audio/',''))) || 
+                        file.name.match(/\.(wav|mp3|m4a|webm|ogg|mp4)$/i);
+        
+        if (!isValid) {
+            showToast('Please select a valid audio file (WAV, MP3, M4A, WEBM, OGG)', 'error');
+            input.value = '';
+            state.selectedFile = null;
+            document.getElementById('filePreview').style.display = 'none';
+            return;
+        }
+
+        // Validate file size (max 20MB)
+        if (file.size > 20 * 1024 * 1024) {
+            showToast('File too large. Max 20MB allowed.', 'error');
+            input.value = '';
+            state.selectedFile = null;
+            document.getElementById('filePreview').style.display = 'none';
+            return;
+        }
+
+        state.selectedFile = file;
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = formatFileSize(file.size);
+        document.getElementById('filePreview').style.display = 'block';
+        showToast(`Selected: ${file.name}`);
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // ─── STEP 2b: UPLOAD SELECTED FILE ────────────────────
+    async function uploadSelectedFile() {
+        if (!state.selectedFile) {
+            showToast('Please select a file first', 'error');
+            return;
+        }
+        await processAudioUpload(state.selectedFile);
+    }
+
+    // ─── STEP 2c: LEGACY UPLOAD HANDLER ───────────────────
+    async function handleUpload(input) {
+        const file = input.files[0];
+        if (!file) return;
+        await processAudioUpload(file);
+    }
+
+    // ─── CORE UPLOAD LOGIC ────────────────────────────────
+    async function processAudioUpload(file) {
         navTo('feature-extraction');
         runPipelineAnimation();
 
@@ -757,6 +829,44 @@ const API = "https://huggingface.co/spaces/davyanh/cognysis-api";
             navTo('audio-capture');
         } finally {
             setSpinner(false);
+        }
+    }
+
+    // ─── DRAG & DROP SUPPORT ──────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        const uploadArea = document.getElementById('uploadArea');
+        if (!uploadArea) return;
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('dragover'), false);
+        });
+
+        uploadArea.addEventListener('drop', handleDrop, false);
+    });
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+            const input = document.getElementById('fileInput');
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(files[0]);
+            input.files = dataTransfer.files;
+            handleFileSelect(input);
         }
     }
 
@@ -1137,6 +1247,6 @@ const API = "https://huggingface.co/spaces/davyanh/cognysis-api";
             showToast('Call still in progress. Check history later.', 'error');
         }
     }
-</script>
+    </script>
 </body>
 </html>
