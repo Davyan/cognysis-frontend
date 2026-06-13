@@ -284,7 +284,6 @@
 </head>
 <body>
     <div class="app">
-        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-brand">
                 <div class="logo-icon">C</div>
@@ -324,17 +323,11 @@
             </div>
         </aside>
 
-        <!-- Main Content -->
         <main class="main">
-
-            <!-- SCREEN: DASHBOARD -->
             <div id="dashboard" class="screen active">
                 <div class="page-header">
                     <div style="display:flex;align-items:center;">
-                        <div>
-                            <h2>Dashboard</h2>
-                            <p>Recent screening activity</p>
-                        </div>
+                        <div><h2>Dashboard</h2><p>Recent screening activity</p></div>
                         <div class="api-status checking" id="apiStatus">● Checking API...</div>
                     </div>
                     <div class="header-actions">
@@ -359,9 +352,7 @@
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">Recent Screenings</div>
-                    </div>
+                    <div class="card-header"><div class="card-title">Recent Screenings</div></div>
                     <div id="dash-history">
                         <div class="empty-state">
                             <div class="empty-state-icon">📊</div>
@@ -372,7 +363,6 @@
                 </div>
             </div>
 
-            <!-- SCREEN: NEW SCREENING (WITH CALL OPTION) -->
             <div id="screening" class="screen">
                 <div class="page-header">
                     <div><h2>New Screening</h2><p>Patient intake — choose call or upload</p></div>
@@ -447,7 +437,6 @@
                 </div>
             </div>
 
-            <!-- SCREEN: NEW SCREENING — UPLOAD ONLY -->
             <div id="screening-upload" class="screen">
                 <div class="page-header">
                     <div><h2>New Screening — Upload</h2><p>Audio file upload only. No live call.</p></div>
@@ -515,8 +504,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Upload Area -->
                 <div class="card" style="margin-top: 8px;">
                     <div class="card-header"><div class="card-title">Audio Upload</div><span class="badge badge-info">File Only</span></div>
                     <div class="upload-area" id="uploadAreaOnly" onclick="document.getElementById('fileInputOnly').click()">
@@ -541,7 +528,6 @@
                 </div>
             </div>
 
-            <!-- SCREEN: AUDIO CAPTURE (CALL + UPLOAD) -->
             <div id="audio-capture" class="screen">
                 <div class="page-header">
                     <div><h2>Audio Capture</h2><p>Choose call or upload</p></div>
@@ -593,7 +579,6 @@
                 </div>
             </div>
 
-            <!-- SCREEN: FEATURE EXTRACTION -->
             <div id="feature-extraction" class="screen">
                 <div class="page-header">
                     <div><h2>Feature Extraction</h2><p>Processing speech biomarkers</p></div>
@@ -626,7 +611,6 @@
                 </div>
             </div>
 
-            <!-- SCREEN: ANALYSIS -->
             <div id="analysis" class="screen">
                 <div class="page-header">
                     <div><h2>AI Analysis</h2><p>Risk scoring from combined features</p></div>
@@ -665,7 +649,6 @@
                 </div>
             </div>
 
-            <!-- SCREEN: RESULTS -->
             <div id="results" class="screen">
                 <div class="page-header">
                     <div><h2>Screening Report</h2><p>Final assessment and next steps</p></div>
@@ -740,7 +723,6 @@
                 </div>
             </div>
 
-            <!-- SCREEN: EXPLAINABILITY -->
             <div id="explainability" class="screen">
                 <div class="page-header">
                     <div><h2>Why This Score?</h2><p>Plain-English breakdown</p></div>
@@ -761,28 +743,20 @@
                     <div id="exp-protective"></div>
                 </div>
             </div>
-
         </main>
     </div>
 
-    <!-- Loading Overlay -->
     <div class="spinner-overlay" id="spinner">
         <div class="spinner-circle"></div>
         <p style="color: var(--text-muted); font-weight: 600;">Analyzing speech patterns...</p>
         <p style="font-size: 12px; color: #a0aec0; margin-top: 8px;" id="spinner-text">M1: Ingest → M2: Clean → M3: Features → M4: Score → M5: Explain</p>
     </div>
 
-    <!-- Toast -->
     <div class="toast" id="toast"></div>
 
     <script>
-    // ═══════════════════════════════════════════════════════
-    //  COGNYSIS API CONFIG — EDIT THIS LINE IF NEEDED
-    // ═══════════════════════════════════════════════════════
-    // Hugging Face Spaces URL format: https://<username>-<space-name>.hf.space
     const API = "https://davyanh-cognysis-api.hf.space";
 
-    // ─── STATE ─────────────────────────────────────────────
     let state = {
         patient: { id: null, first: "", last: "", age: 0, sex: "", edu: 0, lang: "" },
         screening: null,
@@ -791,35 +765,34 @@
         selectedFileOnly: null
     };
 
-    // ─── NAVIGATION ──────────────────────────────────────
     function navTo(screenId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById(screenId).classList.add('active');
-        document.querySelector(`.nav-item[data-screen="${screenId}"]`)?.classList.add('active');
+        const target = document.getElementById(screenId);
+        if (target) target.classList.add('active');
+        const navItem = document.querySelector('.nav-item[data-screen="' + screenId + '"]');
+        if (navItem) navItem.classList.add('active');
     }
 
-    // ─── TOAST ───────────────────────────────────────────
-    function showToast(msg, type = 'success') {
+    function showToast(msg, type) {
+        type = type || 'success';
         const t = document.getElementById('toast');
         t.textContent = msg;
-        t.className = `toast toast-${type}`;
-        requestAnimationFrame(() => t.classList.add('show'));
-        setTimeout(() => t.classList.remove('show'), 4000);
+        t.className = 'toast toast-' + type;
+        requestAnimationFrame(function() { t.classList.add('show'); });
+        setTimeout(function() { t.classList.remove('show'); }, 4000);
     }
 
-    // ─── SPINNER ─────────────────────────────────────────
-    function setSpinner(show, text = '') {
-        const s = document.getElementById('spinner');
+    function setSpinner(show, text) {
+        var s = document.getElementById('spinner');
         if (text) document.getElementById('spinner-text').textContent = text;
         s.classList.toggle('active', show);
     }
 
-    // ─── API HEALTH CHECK ────────────────────────────────
     async function checkApiHealth() {
         const statusEl = document.getElementById('apiStatus');
         try {
-            const res = await fetch(`${API}/`, { method: 'GET', headers: { 'Accept': 'application/json' } });
+            const res = await fetch(API + '/', { method: 'GET', headers: { 'Accept': 'application/json' } });
             if (res.ok) {
                 statusEl.textContent = '● API Online';
                 statusEl.className = 'api-status online';
@@ -833,29 +806,13 @@
         }
     }
 
-    // ─── NETWORK ERROR DIAGNOSTICS ───────────────────────
     function diagnoseFetchError(error, url) {
-        let diagnosis = '';
-        if (error.message.includes('Failed to fetch')) {
-            diagnosis = `Cannot reach ${url}. 
-
-LIKELY CAUSES:
-1. Backend is not running
-2. CORS blocked (add CORS middleware to backend)
-3. Wrong API URL (currently: ${API})
-4. Opening HTML via file:// (use a local server)`;
-        } else if (error.message.includes('CORS')) {
-            diagnosis = 'CORS Policy Blocked. Add this to your FastAPI backend:
-
-from fastapi.middleware.cors import CORSMiddleware
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])';
-        } else {
-            diagnosis = `Network error: ${error.message}`;
+        if (error.message && error.message.indexOf('Failed to fetch') !== -1) {
+            return 'Cannot reach ' + url + '. Check: 1) Backend running, 2) CORS enabled, 3) URL correct (' + API + '), 4) Not using file:// protocol';
         }
-        return diagnosis;
+        return 'Error: ' + error.message;
     }
 
-    // ─── STEP 1: BEGIN SCREENING (CALL FLOW) ─────────────
     async function beginScreening() {
         const first = document.getElementById('p-first').value.trim();
         const last = document.getElementById('p-last').value.trim();
@@ -869,49 +826,37 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
             return;
         }
 
-        const endpoint = `${API}/patients`;
-        const queryParams = `first_name=${encodeURIComponent(first)}&last_name=${encodeURIComponent(last)}&age=${age}&sex=${encodeURIComponent(sex)}&education=${edu}&language=${encodeURIComponent(lang)}`;
-        const fullUrl = `${endpoint}?${queryParams}`;
+        const fullUrl = API + '/patients?first_name=' + encodeURIComponent(first) + '&last_name=' + encodeURIComponent(last) + '&age=' + age + '&sex=' + encodeURIComponent(sex) + '&education=' + edu + '&language=' + encodeURIComponent(lang);
 
         setSpinner(true, 'Creating patient record...');
 
         try {
-            const res = await fetch(fullUrl, {
-                method: 'POST',
-                headers: { 'Accept': 'application/json' }
-            });
-
+            const res = await fetch(fullUrl, { method: 'POST', headers: { 'Accept': 'application/json' } });
             if (!res.ok) {
-                const errText = await res.text().catch(() => 'Unknown error');
-                throw new Error(`HTTP ${res.status}: ${errText}`);
+                const errText = await res.text().catch(function() { return 'Unknown error'; });
+                throw new Error('HTTP ' + res.status + ': ' + errText);
             }
-
             const data = await res.json();
-            state.patient = { id: data.id, first, last, age, sex, edu, lang };
+            state.patient = { id: data.id, first: first, last: last, age: age, sex: sex, edu: edu, lang: lang };
 
-            document.getElementById('cap-name').textContent = `${first} ${last}`;
+            document.getElementById('cap-name').textContent = first + ' ' + last;
             document.getElementById('cap-avatar').textContent = (first[0] + last[0]).toUpperCase();
-            document.getElementById('cap-meta').innerHTML = `
-                <span>${age} yrs</span><span>•</span><span>${sex}</span><span>•</span><span>${edu} yrs education</span><span>•</span><span>${lang}</span>
-            `;
+            document.getElementById('cap-meta').innerHTML = '<span>' + age + ' yrs</span><span>•</span><span>' + sex + '</span><span>•</span><span>' + edu + ' yrs education</span><span>•</span><span>' + lang + '</span>';
 
             state.selectedFile = null;
             document.getElementById('filePreview').style.display = 'none';
             document.getElementById('fileInput').value = '';
 
             navTo('audio-capture');
-            showToast(`Patient ${first} ${last} registered`);
+            showToast('Patient ' + first + ' ' + last + ' registered');
         } catch (e) {
-            const diagnosis = diagnoseFetchError(e, fullUrl);
-            showToast(diagnosis.split('
-')[0], 'error');
+            showToast(diagnoseFetchError(e, fullUrl), 'error');
             console.error(e);
         } finally {
             setSpinner(false);
         }
     }
 
-    // ─── STEP 1b: BEGIN SCREENING (UPLOAD ONLY FLOW) ─────
     async function beginUploadScreening() {
         const first = document.getElementById('p-first-upload').value.trim();
         const last = document.getElementById('p-last-upload').value.trim();
@@ -924,54 +869,36 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
             showToast('Please enter patient name', 'error');
             return;
         }
-
         if (!state.selectedFileOnly) {
             showToast('Please select an audio file first', 'error');
             return;
         }
 
-        const endpoint = `${API}/patients`;
-        const queryParams = `first_name=${encodeURIComponent(first)}&last_name=${encodeURIComponent(last)}&age=${age}&sex=${encodeURIComponent(sex)}&education=${edu}&language=${encodeURIComponent(lang)}`;
-        const fullUrl = `${endpoint}?${queryParams}`;
+        const fullUrl = API + '/patients?first_name=' + encodeURIComponent(first) + '&last_name=' + encodeURIComponent(last) + '&age=' + age + '&sex=' + encodeURIComponent(sex) + '&education=' + edu + '&language=' + encodeURIComponent(lang);
 
         setSpinner(true, 'Creating patient record...');
-
         try {
-            const res = await fetch(fullUrl, {
-                method: 'POST',
-                headers: { 'Accept': 'application/json' }
-            });
-
+            const res = await fetch(fullUrl, { method: 'POST', headers: { 'Accept': 'application/json' } });
             if (!res.ok) {
-                const errText = await res.text().catch(() => 'Unknown error');
-                throw new Error(`HTTP ${res.status}: ${errText}`);
+                const errText = await res.text().catch(function() { return 'Unknown error'; });
+                throw new Error('HTTP ' + res.status + ': ' + errText);
             }
-
             const data = await res.json();
-            state.patient = { id: data.id, first, last, age, sex, edu, lang };
-
-            showToast(`Patient ${first} ${last} registered. Starting upload...`);
-
-            // Immediately proceed to upload
+            state.patient = { id: data.id, first: first, last: last, age: age, sex: sex, edu: edu, lang: lang };
+            showToast('Patient ' + first + ' ' + last + ' registered. Starting upload...');
             await processAudioUpload(state.selectedFileOnly);
-
         } catch (e) {
-            const diagnosis = diagnoseFetchError(e, fullUrl);
-            showToast(diagnosis.split('
-')[0], 'error');
+            showToast(diagnoseFetchError(e, fullUrl), 'error');
             console.error(e);
             setSpinner(false);
         }
     }
 
-    // ─── FILE SELECTION (CALL FLOW) ──────────────────────
     function handleFileSelect(input) {
         const file = input.files[0];
         if (!file) return;
-
         const validExts = ['.wav','.mp3','.m4a','.webm','.ogg','.mp4'];
-        const hasValidExt = validExts.some(ext => file.name.toLowerCase().endsWith(ext));
-
+        const hasValidExt = validExts.some(function(ext) { return file.name.toLowerCase().endsWith(ext); });
         if (!hasValidExt) {
             showToast('Please select a valid audio file (WAV, MP3, M4A, WEBM, OGG)', 'error');
             input.value = '';
@@ -979,7 +906,6 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
             document.getElementById('filePreview').style.display = 'none';
             return;
         }
-
         if (file.size > 20 * 1024 * 1024) {
             showToast('File too large. Max 20MB allowed.', 'error');
             input.value = '';
@@ -987,22 +913,18 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
             document.getElementById('filePreview').style.display = 'none';
             return;
         }
-
         state.selectedFile = file;
         document.getElementById('fileName').textContent = file.name;
         document.getElementById('fileSize').textContent = formatFileSize(file.size);
         document.getElementById('filePreview').style.display = 'block';
-        showToast(`Selected: ${file.name}`);
+        showToast('Selected: ' + file.name);
     }
 
-    // ─── FILE SELECTION (UPLOAD ONLY FLOW) ───────────────
     function handleFileSelectOnly(input) {
         const file = input.files[0];
         if (!file) return;
-
         const validExts = ['.wav','.mp3','.m4a','.webm','.ogg','.mp4'];
-        const hasValidExt = validExts.some(ext => file.name.toLowerCase().endsWith(ext));
-
+        const hasValidExt = validExts.some(function(ext) { return file.name.toLowerCase().endsWith(ext); });
         if (!hasValidExt) {
             showToast('Please select a valid audio file (WAV, MP3, M4A, WEBM, OGG)', 'error');
             input.value = '';
@@ -1010,7 +932,6 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
             document.getElementById('filePreviewOnly').style.display = 'none';
             return;
         }
-
         if (file.size > 20 * 1024 * 1024) {
             showToast('File too large. Max 20MB allowed.', 'error');
             input.value = '';
@@ -1018,12 +939,11 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
             document.getElementById('filePreviewOnly').style.display = 'none';
             return;
         }
-
         state.selectedFileOnly = file;
         document.getElementById('fileNameOnly').textContent = file.name;
         document.getElementById('fileSizeOnly').textContent = formatFileSize(file.size);
         document.getElementById('filePreviewOnly').style.display = 'block';
-        showToast(`Selected: ${file.name}`);
+        showToast('Selected: ' + file.name);
     }
 
     function formatFileSize(bytes) {
@@ -1034,7 +954,6 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    // ─── UPLOAD TRIGGERS ─────────────────────────────────
     async function uploadSelectedFile() {
         if (!state.selectedFile) {
             showToast('Please select a file first', 'error');
@@ -1043,43 +962,29 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
         await processAudioUpload(state.selectedFile);
     }
 
-    // ─── CORE UPLOAD LOGIC ────────────────────────────────
     async function processAudioUpload(file) {
-        const endpoint = `${API}/screen`;
-
+        const endpoint = API + '/screen';
         navTo('feature-extraction');
         runPipelineAnimation();
         setSpinner(true, 'Uploading and analyzing audio...');
-
         try {
             const formData = new FormData();
             formData.append('file', file);
-
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                body: formData,
-                headers: { 'Accept': 'application/json' }
-            });
-
+            const res = await fetch(endpoint, { method: 'POST', body: formData, headers: { 'Accept': 'application/json' } });
             if (!res.ok) {
-                const errText = await res.text().catch(() => 'Unknown error');
-                throw new Error(`HTTP ${res.status}: ${errText}`);
+                const errText = await res.text().catch(function() { return 'Unknown error'; });
+                throw new Error('HTTP ' + res.status + ': ' + errText);
             }
-
             const data = await res.json();
             state.screening = data;
-
             populateAnalysis(data);
             populateResults(data);
             populateExplainability(data);
-
-            await new Promise(r => setTimeout(r, 1500));
+            await new Promise(function(r) { setTimeout(r, 1500); });
             navTo('analysis');
             showToast('Analysis complete');
         } catch (e) {
-            const diagnosis = diagnoseFetchError(e, endpoint);
-            showToast(diagnosis.split('
-')[0], 'error');
+            showToast(diagnoseFetchError(e, endpoint), 'error');
             console.error(e);
             navTo('audio-capture');
         } finally {
@@ -1087,68 +992,52 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
         }
     }
 
-    // ─── DRAG & DROP SUPPORT (both upload areas) ───────────
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', function() {
         checkApiHealth();
         loadHistory();
-
-        // Initialize both upload areas
-        ['uploadArea', 'uploadAreaOnly'].forEach(id => {
+        ['uploadArea', 'uploadAreaOnly'].forEach(function(id) {
             const area = document.getElementById(id);
             if (!area) return;
-
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                area.addEventListener(eventName, preventDefaults, false);
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function(eventName) {
+                area.addEventListener(eventName, function(e) { e.preventDefault(); e.stopPropagation(); }, false);
             });
-
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-
-            ['dragenter', 'dragover'].forEach(eventName => {
-                area.addEventListener(eventName, () => area.classList.add('dragover'), false);
+            ['dragenter', 'dragover'].forEach(function(eventName) {
+                area.addEventListener(eventName, function() { area.classList.add('dragover'); }, false);
             });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                area.addEventListener(eventName, () => area.classList.remove('dragover'), false);
+            ['dragleave', 'drop'].forEach(function(eventName) {
+                area.addEventListener(eventName, function() { area.classList.remove('dragover'); }, false);
             });
-
-            area.addEventListener('drop', (e) => handleDrop(e, id), false);
+            area.addEventListener('drop', function(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    if (id === 'uploadAreaOnly') {
+                        const input = document.getElementById('fileInputOnly');
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(files[0]);
+                        input.files = dataTransfer.files;
+                        handleFileSelectOnly(input);
+                    } else {
+                        const input = document.getElementById('fileInput');
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(files[0]);
+                        input.files = dataTransfer.files;
+                        handleFileSelect(input);
+                    }
+                }
+            }, false);
         });
     });
 
-    function handleDrop(e, areaId) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        if (files.length > 0) {
-            if (areaId === 'uploadAreaOnly') {
-                const input = document.getElementById('fileInputOnly');
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(files[0]);
-                input.files = dataTransfer.files;
-                handleFileSelectOnly(input);
-            } else {
-                const input = document.getElementById('fileInput');
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(files[0]);
-                input.files = dataTransfer.files;
-                handleFileSelect(input);
-            }
-        }
-    }
-
-    // ─── PIPELINE ANIMATION ───────────────────────────────
     function runPipelineAnimation() {
         const steps = [
-            { id: 'pipe-1', dot: 'dot-1', stat: 'stat-1', text: 'Done', delay: 600 },
-            { id: 'pipe-2', dot: 'dot-2', stat: 'stat-2', text: 'Done', delay: 1400 },
-            { id: 'pipe-3', dot: 'dot-3', stat: 'stat-3', text: 'Running', delay: 2200 },
-            { id: 'pipe-4', dot: 'dot-4', stat: 'stat-4', text: 'Running', delay: 3000 },
+            { id: 'pipe-1', dot: 'dot-1', stat: 'stat-1', delay: 600 },
+            { id: 'pipe-2', dot: 'dot-2', stat: 'stat-2', delay: 1400 },
+            { id: 'pipe-3', dot: 'dot-3', stat: 'stat-3', delay: 2200 },
+            { id: 'pipe-4', dot: 'dot-4', stat: 'stat-4', delay: 3000 },
         ];
-
-        steps.forEach((s, i) => {
-            setTimeout(() => {
+        steps.forEach(function(s, i) {
+            setTimeout(function() {
                 const el = document.getElementById(s.id);
                 const dot = document.getElementById(s.dot);
                 const stat = document.getElementById(s.stat);
@@ -1168,11 +1057,10 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
                 }
             }, s.delay);
         });
-
-        setTimeout(() => {
+        setTimeout(function() {
             document.getElementById('pipe-badge').textContent = 'Complete';
             document.getElementById('pipe-badge').className = 'badge badge-complete';
-            steps.slice(2).forEach(s => {
+            steps.slice(2).forEach(function(s) {
                 const el = document.getElementById(s.id);
                 const dot = document.getElementById(s.dot);
                 const stat = document.getElementById(s.stat);
@@ -1186,42 +1074,31 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
         }, 4000);
     }
 
-    // ─── POPULATE ANALYSIS ─────────────────────────────────
     function populateAnalysis(data) {
         const pred = data.prediction;
         const score = Math.round(pred.risk_score * 100);
         const level = pred.risk_level;
         const color = level === 'high' ? '#ef4444' : level === 'moderate' ? '#f59e0b' : '#10b981';
-
         document.getElementById('ana-score').textContent = score;
         document.getElementById('ana-score').style.color = color;
         document.getElementById('ana-level').textContent = level.charAt(0).toUpperCase() + level.slice(1) + ' Risk';
         document.getElementById('ana-level').style.color = color;
-
         const marker = document.getElementById('ana-marker');
         marker.style.left = score + '%';
         marker.textContent = score;
         marker.style.borderColor = color;
-
         const shapContainer = document.getElementById('ana-shap');
         shapContainer.innerHTML = '';
-        const maxImpact = Math.max(...pred.shap_breakdown.map(d => Math.abs(d.impact)));
-        pred.shap_breakdown.forEach(item => {
+        const maxImpact = Math.max.apply(null, pred.shap_breakdown.map(function(d) { return Math.abs(d.impact); }));
+        pred.shap_breakdown.forEach(function(item) {
             const width = (Math.abs(item.impact) / maxImpact * 100);
             const div = document.createElement('div');
             div.className = 'shap-row';
-            div.innerHTML = `
-                <div class="shap-label">${formatFeatureName(item.feature)}</div>
-                <div class="shap-bar-wrap">
-                    <div class="shap-bar ${item.impact > 0 ? 'positive' : 'negative'}" style="width: ${width}%"></div>
-                    <span class="shap-value">${item.impact > 0 ? '+' : ''}${item.impact.toFixed(4)}</span>
-                </div>
-            `;
+            div.innerHTML = '<div class="shap-label">' + formatFeatureName(item.feature) + '</div><div class="shap-bar-wrap"><div class="shap-bar ' + (item.impact > 0 ? 'positive' : 'negative') + '" style="width: ' + width + '%"></div><span class="shap-value">' + (item.impact > 0 ? '+' : '') + item.impact.toFixed(4) + '</span></div>';
             shapContainer.appendChild(div);
         });
     }
 
-    // ─── POPULATE RESULTS ──────────────────────────────────
     function populateResults(data) {
         const pred = data.prediction;
         const features = data.features;
@@ -1230,41 +1107,29 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
         const level = pred.risk_level;
         const color = level === 'high' ? '#ef4444' : level === 'moderate' ? '#f59e0b' : '#10b981';
         const p = state.patient;
-
-        document.getElementById('res-name').textContent = `${p.first} ${p.last}`;
+        document.getElementById('res-name').textContent = p.first + ' ' + p.last;
         document.getElementById('res-avatar').textContent = (p.first[0] + p.last[0]).toUpperCase();
-        document.getElementById('res-meta').innerHTML = `<span>${p.age} yrs</span><span>•</span><span>${p.sex}</span><span>•</span><span>${p.edu} yrs education</span>`;
+        document.getElementById('res-meta').innerHTML = '<span>' + p.age + ' yrs</span><span>•</span><span>' + p.sex + '</span><span>•</span><span>' + p.edu + ' yrs education</span>';
         document.getElementById('res-score').innerHTML = score + '<span style="font-size:14px;color:#94a3b8">/100</span>';
         document.getElementById('res-score').style.color = color;
         document.getElementById('res-pill').textContent = level.toUpperCase() + ' RISK';
         document.getElementById('res-pill').className = 'risk-pill risk-' + level;
         document.getElementById('res-card').style.borderLeftColor = color;
-
-        document.getElementById('res-summary').innerHTML =
-            `The AI detected speech patterns consistent with <strong>${level} risk</strong> for cognitive impairment. ` +
-            (exp.key_indicators[0] || '') + ' ' + (exp.key_indicators[1] || '') +
-            ` This is a <strong>screening result — not a clinical diagnosis</strong>.`;
-
+        document.getElementById('res-summary').innerHTML = 'The AI detected speech patterns consistent with <strong>' + level + ' risk</strong> for cognitive impairment. ' + (exp.key_indicators[0] || '') + ' ' + (exp.key_indicators[1] || '') + ' This is a <strong>screening result — not a clinical diagnosis</strong>.';
         const findings = document.getElementById('res-findings');
         findings.innerHTML = '';
-        exp.key_indicators.forEach((indicator, i) => {
+        exp.key_indicators.forEach(function(indicator, i) {
             const isHigh = i < 2;
             const c = isHigh ? 'var(--danger)' : 'var(--warning)';
             const b = isHigh ? '3px solid var(--danger)' : '3px solid var(--warning)';
-            const arrow = indicator.includes('↑') ? '↑' : indicator.includes('↓') ? '↓' : '•';
+            const arrow = indicator.indexOf('↑') !== -1 ? '↑' : indicator.indexOf('↓') !== -1 ? '↓' : '•';
             const numMatch = indicator.match(/[\d\.]+/);
             const num = numMatch ? numMatch[0] : '';
-
             const div = document.createElement('div');
-            div.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg);border-radius:var(--radius-sm);border-left:${b};margin-bottom:8px;`;
-            div.innerHTML = `
-                <div><div style="font-size:12px;font-weight:700;">${indicator.split('—')[0]}</div>
-                <div style="font-size:11px;color:var(--text-muted);">${indicator.split('—')[1] || ''}</div></div>
-                <div style="font-size:16px;font-weight:800;color:${c};">${arrow} ${num}</div>
-            `;
+            div.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg);border-radius:var(--radius-sm);border-left:' + b + ';margin-bottom:8px;';
+            div.innerHTML = '<div><div style="font-size:12px;font-weight:700;">' + indicator.split('—')[0] + '</div><div style="font-size:11px;color:var(--text-muted);">' + (indicator.split('—')[1] || '') + '</div></div><div style="font-size:16px;font-weight:800;color:' + c + ';">' + arrow + ' ' + num + '</div>';
             findings.appendChild(div);
         });
-
         const markers = document.getElementById('res-markers');
         markers.innerHTML = '';
         const markerData = [
@@ -1275,75 +1140,58 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
             { name: 'Word count (linguistic)', signal: 'Low', result: features.linguistic.word_count, chip: 'chip-success' },
             { name: 'Filler rate (linguistic)', signal: 'Low', result: features.linguistic.filler_rate, chip: 'chip-success' },
         ];
-        markerData.forEach(m => {
+        markerData.forEach(function(m) {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${m.name}</td><td>${m.signal}</td><td><span class="chip ${m.chip}">${m.result}</span></td>`;
+            tr.innerHTML = '<td>' + m.name + '</td><td>' + m.signal + '</td><td><span class="chip ' + m.chip + '">' + m.result + '</span></td>';
             markers.appendChild(tr);
         });
     }
 
-    // ─── POPULATE EXPLAINABILITY ───────────────────────────
     function populateExplainability(data) {
         const pred = data.prediction;
         const features = data.features;
         const acoustic = document.getElementById('exp-acoustic');
         const transcript = document.getElementById('exp-transcript');
         const protective = document.getElementById('exp-protective');
-
         acoustic.innerHTML = '';
         transcript.innerHTML = '';
         protective.innerHTML = '';
-
-        pred.shap_breakdown.forEach(item => {
+        pred.shap_breakdown.forEach(function(item) {
             if (item.impact <= 0) return;
             const isHigh = item.impact > 0.1;
             const b = isHigh ? '3px solid var(--danger)' : '3px solid var(--warning)';
             const c = isHigh ? 'var(--danger)' : 'var(--warning)';
             const desc = getFeatureDesc(item.feature, features);
-
             const div = document.createElement('div');
-            div.style.cssText = `padding:14px;background:var(--bg);border-radius:var(--radius-sm);border-left:${b};margin-bottom:10px;`;
-            div.innerHTML = `
-                <div style="font-size:13px;font-weight:700;color:${c};margin-bottom:4px;">
-                    ${getFeatureIcon(item.feature)} ${formatFeatureName(item.feature)} — Impact: +${item.impact.toFixed(3)}
-                </div>
-                <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">${desc}</div>
-            `;
-
-            if (['pause_ratio','pitch_std_hz','short_utterance_count','duration_seconds'].includes(item.feature)) {
+            div.style.cssText = 'padding:14px;background:var(--bg);border-radius:var(--radius-sm);border-left:' + b + ';margin-bottom:10px;';
+            div.innerHTML = '<div style="font-size:13px;font-weight:700;color:' + c + ';margin-bottom:4px;">' + getFeatureIcon(item.feature) + ' ' + formatFeatureName(item.feature) + ' — Impact: +' + item.impact.toFixed(3) + '</div><div style="font-size:12px;color:var(--text-muted);line-height:1.6;">' + desc + '</div>';
+            if (['pause_ratio','pitch_std_hz','short_utterance_count','duration_seconds'].indexOf(item.feature) !== -1) {
                 acoustic.appendChild(div);
             } else {
                 transcript.appendChild(div);
             }
         });
-
         const edu = state.patient.edu;
         if (edu > 0) {
             const div = document.createElement('div');
             div.style.cssText = 'padding:14px;background:#d1fae5;border-radius:var(--radius-sm);border-left:3px solid var(--success);';
-            div.innerHTML = `
-                <div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:4px;">📖 ${edu} Years of Education</div>
-                <div style="font-size:12px;color:#065f46;line-height:1.6;">${edu} years of schooling provides cognitive reserve — extra brain capacity that helps compensate for early decline. The system adjusted the score upward because of this protective factor.</div>
-            `;
+            div.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:4px;">📖 ' + edu + ' Years of Education</div><div style="font-size:12px;color:#065f46;line-height:1.6;">' + edu + ' years of schooling provides cognitive reserve — extra brain capacity that helps compensate for early decline. The system adjusted the score upward because of this protective factor.</div>';
             protective.appendChild(div);
         }
     }
 
-    // ─── SAVE TO DB & GO TO RESULTS ────────────────────────
     async function saveAndGoToResults() {
         if (!state.screening || !state.patient.id) {
             showToast('No screening data to save', 'error');
             return;
         }
-
-        const endpoint = `${API}/screenings`;
+        const endpoint = API + '/screenings';
         setSpinner(true, 'Saving to database...');
-
         try {
             const pred = state.screening.prediction;
             const params = new URLSearchParams({
                 patient_id: state.patient.id,
-                patient_name: `${state.patient.first} ${state.patient.last}`,
+                patient_name: state.patient.first + ' ' + state.patient.last,
                 filename: state.screening.filename,
                 risk_score: pred.risk_score,
                 risk_level: pred.risk_level,
@@ -1351,67 +1199,43 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
                 shap_json: JSON.stringify(pred.shap_breakdown),
                 explanation_json: JSON.stringify(pred.explanation)
             });
-
-            const res = await fetch(`${endpoint}?${params}`, {
-                method: 'POST',
-                headers: { 'Accept': 'application/json' }
-            });
-
+            const res = await fetch(endpoint + '?' + params.toString(), { method: 'POST', headers: { 'Accept': 'application/json' } });
             if (!res.ok) {
-                const errText = await res.text().catch(() => 'Unknown error');
-                throw new Error(`HTTP ${res.status}: ${errText}`);
+                const errText = await res.text().catch(function() { return 'Unknown error'; });
+                throw new Error('HTTP ' + res.status + ': ' + errText);
             }
-
             await loadHistory();
             navTo('results');
             showToast('Screening saved to database');
         } catch (e) {
-            const diagnosis = diagnoseFetchError(e, endpoint);
-            showToast(diagnosis.split('
-')[0], 'error');
+            showToast(diagnoseFetchError(e, endpoint), 'error');
             console.error(e);
         } finally {
             setSpinner(false);
         }
     }
 
-    // ─── LOAD HISTORY FROM DB ──────────────────────────────
     async function loadHistory() {
-        const endpoint = `${API}/screenings`;
+        const endpoint = API + '/screenings';
         try {
             const res = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
             if (!res.ok) return;
             const rows = await res.json();
             state.history = rows;
-
             document.getElementById('dash-count').textContent = rows.length;
-            document.getElementById('dash-high').textContent = rows.filter(r => r.risk_level === 'high').length;
-
+            document.getElementById('dash-high').textContent = rows.filter(function(r) { return r.risk_level === 'high'; }).length;
             const container = document.getElementById('dash-history');
             if (rows.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📊</div>
-                        <h3>No screenings yet</h3>
-                        <p>Start a new screening to see results here.</p>
-                    </div>`;
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><h3>No screenings yet</h3><p>Start a new screening to see results here.</p></div>';
                 return;
             }
-
             let html = '<table class="data-table"><thead><tr><th>Patient</th><th>Date</th><th>Score</th><th>Status</th><th>Source</th><th></th></tr></thead><tbody>';
-            rows.slice(0, 10).forEach(r => {
+            rows.slice(0, 10).forEach(function(r) {
                 const score = Math.round(r.risk_score * 100);
                 const color = r.risk_level === 'high' ? 'var(--danger)' : r.risk_level === 'moderate' ? 'var(--warning)' : 'var(--success)';
                 const tagClass = r.risk_level === 'high' ? 'background:#fee2e2;color:var(--danger);' : r.risk_level === 'moderate' ? 'background:#fef3c7;color:#92400e;' : 'background:#d1fae5;color:var(--success);';
                 const date = new Date(r.created_at).toLocaleDateString();
-                html += `
-                    <tr>
-                        <td><strong>${r.patient_name}</strong></td>
-                        <td>${date}</td>
-                        <td><span style="color:${color};font-weight:700;">${score}</span></td>
-                        <td><span class="table-tag" style="${tagClass}">${r.risk_level.toUpperCase()}</span></td><td><span class="table-tag" style="background:#e0e7ff;color:#4338ca;font-size:9px;">${r.source?.toUpperCase() || "UPLOAD"}</span></td>
-                        <td><button class="btn btn-primary btn-sm" onclick="loadScreening(${r.id})">View</button></td>
-                    </tr>`;
+                html += '<tr><td><strong>' + r.patient_name + '</strong></td><td>' + date + '</td><td><span style="color:' + color + ';font-weight:700;">' + score + '</span></td><td><span class="table-tag" style="' + tagClass + '">' + r.risk_level.toUpperCase() + '</span></td><td><span class="table-tag" style="background:#e0e7ff;color:#4338ca;font-size:9px;">' + (r.source ? r.source.toUpperCase() : "UPLOAD") + '</span></td><td><button class="btn btn-primary btn-sm" onclick="loadScreening(' + r.id + ')">View</button></td></tr>';
             });
             html += '</tbody></table>';
             container.innerHTML = html;
@@ -1420,20 +1244,18 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
         }
     }
 
-    // ─── LOAD A SAVED SCREENING ────────────────────────────
     async function loadScreening(id) {
-        const endpoint = `${API}/screenings/${id}`;
+        const endpoint = API + '/screenings/' + id;
         setSpinner(true, 'Loading screening...');
-
         try {
             const res = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
             if (!res.ok) {
-                const errText = await res.text().catch(() => 'Unknown error');
-                throw new Error(`HTTP ${res.status}: ${errText}`);
+                const errText = await res.text().catch(function() { return 'Unknown error'; });
+                throw new Error('HTTP ' + res.status + ': ' + errText);
             }
-
             const data = await res.json();
-            state.patient = { first: data.patient_name.split(' ')[0], last: data.patient_name.split(' ')[1] || '', age: 0, sex: '', edu: 0, lang: '' };
+            const nameParts = data.patient_name.split(' ');
+            state.patient = { first: nameParts[0], last: nameParts[1] || '', age: 0, sex: '', edu: 0, lang: '' };
             state.screening = {
                 filename: data.filename,
                 features: data.features,
@@ -1444,22 +1266,18 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
                     explanation: data.explanation
                 }
             };
-
             populateAnalysis(state.screening);
             populateResults(state.screening);
             populateExplainability(state.screening);
             navTo('results');
         } catch (e) {
-            const diagnosis = diagnoseFetchError(e, endpoint);
-            showToast(diagnosis.split('
-')[0], 'error');
+            showToast(diagnoseFetchError(e, endpoint), 'error');
             console.error(e);
         } finally {
             setSpinner(false);
         }
     }
 
-    // ─── HELPERS ───────────────────────────────────────────
     function getFeatureIcon(name) {
         const map = { 'speech_rate_wpm': '⚡', 'pause_ratio': '⏱️', 'pitch_std_hz': '🎵', 'short_utterance_count': '💬', 'duration_seconds': '⏳' };
         return map[name] || '📊';
@@ -1472,18 +1290,17 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
         const a = features.acoustic;
         const l = features.linguistic;
         const descs = {
-            'speech_rate_wpm': `The patient spoke at ${l.speech_rate_wpm} WPM. Normal is 120–180. Slower speech indicates the brain needs more time to retrieve words.`,
-            'pause_ratio': `${Math.round(a.pause_ratio * 100)}% of the recording was silence. Healthy speech has 15–30% silence. Extended pauses suggest word-retrieval difficulty.`,
-            'pitch_std_hz': `Pitch varied by only ${a.pitch_std_hz} Hz. Healthy speech has 40–70 Hz. A monotone voice can indicate reduced motor control.`,
-            'short_utterance_count': `The audio contained ${a.short_utterance_count} very short speech segments that Whisper could not transcribe. These are likely "um" sounds or aborted word starts.`,
-            'duration_seconds': `The recording was ${a.duration_seconds} seconds. Extended duration with the same word count suggests slower, effortful speech.`
+            'speech_rate_wpm': 'The patient spoke at ' + l.speech_rate_wpm + ' WPM. Normal is 120–180. Slower speech indicates the brain needs more time to retrieve words.',
+            'pause_ratio': Math.round(a.pause_ratio * 100) + '% of the recording was silence. Healthy speech has 15–30% silence. Extended pauses suggest word-retrieval difficulty.',
+            'pitch_std_hz': 'Pitch varied by only ' + a.pitch_std_hz + ' Hz. Healthy speech has 40–70 Hz. A monotone voice can indicate reduced motor control.',
+            'short_utterance_count': 'The audio contained ' + a.short_utterance_count + ' very short speech segments that Whisper could not transcribe. These are likely "um" sounds or aborted word starts.',
+            'duration_seconds': 'The recording was ' + a.duration_seconds + ' seconds. Extended duration with the same word count suggests slower, effortful speech.'
         };
         return descs[name] || 'Significant contribution to risk score.';
     }
 
-    // ─── TWILIO CALL ───────────────────────────────────────
     async function triggerOutboundCall() {
-        const phone = document.getElementById('p-phone')?.value.trim();
+        const phone = document.getElementById('p-phone') ? document.getElementById('p-phone').value.trim() : '';
         if (!phone) {
             showToast('Please enter a phone number first', 'error');
             return;
@@ -1492,23 +1309,19 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
             showToast('Please register the patient first (click Begin)', 'error');
             return;
         }
-
-        const endpoint = `${API}/twilio/call?phone_number=${encodeURIComponent(phone)}&patient_id=${state.patient.id}`;
+        const endpoint = API + '/twilio/call?phone_number=' + encodeURIComponent(phone) + '&patient_id=' + state.patient.id;
         setSpinner(true, 'Initiating Twilio call...');
-
         try {
             const res = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
             if (!res.ok) {
-                const err = await res.json().catch(() => ({ detail: 'Call failed' }));
+                const err = await res.json().catch(function() { return { detail: 'Call failed' }; });
                 throw new Error(err.detail || 'Call failed');
             }
             const data = await res.json();
-            showToast(`Calling ${phone}... Call SID: ${data.call_sid}`);
-            setTimeout(() => pollForTwilioResult(), 30000);
+            showToast('Calling ' + phone + '... Call SID: ' + data.call_sid);
+            setTimeout(function() { pollForTwilioResult(); }, 30000);
         } catch (e) {
-            const diagnosis = diagnoseFetchError(e, endpoint);
-            showToast(diagnosis.split('
-')[0], 'error');
+            showToast(diagnoseFetchError(e, endpoint), 'error');
             console.error(e);
         } finally {
             setSpinner(false);
@@ -1517,7 +1330,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 
     async function pollForTwilioResult() {
         await loadHistory();
-        const twilioScreening = state.history.find(s => s.source === 'twilio' && s.patient_name.includes(state.patient.first));
+        const twilioScreening = state.history.find(function(s) { return s.source === 'twilio' && s.patient_name.indexOf(state.patient.first) !== -1; });
         if (twilioScreening) {
             showToast('Phone screening received!');
             await loadScreening(twilioScreening.id);
