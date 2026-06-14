@@ -21,6 +21,7 @@ function navTo(screenId) {
     document.querySelectorAll('.animate-in').forEach(function(el) {
         el.style.animation = 'none'; el.offsetHeight; el.style.animation = '';
     });
+    if (screenId === 'audio-capture') populateAudioCapture(); 
     if (screenId === 'audio-capture') initWaveform();
 }
 
@@ -62,6 +63,76 @@ function initWaveform() {
         bar.style.animationDelay = (i * 0.05) + 's';
         bar.style.opacity = 0.3 + Math.random() * 0.7;
         container.appendChild(bar);
+    }
+}
+
+/* ============================================================
+   POPULATE AUDIO CAPTURE — Shows real transcript after upload
+   ============================================================ */
+function populateAudioCapture() {
+    var p = state.patient;
+    var badge = document.querySelector('#audio-capture .risk-pill');
+    var transcriptBox = document.querySelector('#audio-capture .transcript-box');
+
+    // Update patient header from state
+    if (p.first) {
+        document.getElementById('cap-name').textContent = p.first + ' ' + p.last;
+        document.getElementById('cap-avatar').textContent = (p.first[0] && p.last[0]) ? (p.first[0] + p.last[0]).toUpperCase() : '??';
+        document.getElementById('cap-meta').innerHTML = '<span>' + p.age + ' yrs</span><span>•</span><span>' + p.sex + '</span><span>•</span><span>' + p.edu + ' yrs education</span>';
+    }
+
+    // If we have screening data, show real transcript
+    if (state.screening && state.screening.features && state.screening.features.linguistic) {
+        var l = state.screening.features.linguistic;
+        var transcript = l.transcript || '';
+        var source = state.screening.source || 'upload';
+
+        // Update badge based on source
+        if (badge) {
+            if (source === 'twilio') {
+                badge.textContent = '🔴 LIVE CALL';
+                badge.className = 'risk-pill risk-high';
+            } else {
+                badge.textContent = '✓ UPLOAD COMPLETE';
+                badge.className = 'risk-pill risk-low';
+            }
+        }
+
+        // Build color-coded transcript HTML
+        if (transcriptBox && transcript) {
+            var html = '<div class="transcript-line"><div class="transcript-speaker">AI INTERVIEWER</div><div class="transcript-text">Can you tell me about what you did yesterday?</div></div>';
+            html += '<div class="transcript-line"><div class="transcript-speaker">PATIENT</div><div class="transcript-text">';
+
+            var tokens = transcript.split(/(\s+)/);
+            var fillerWords = ['um','uh','erm','hmm','ah','er'];
+            var vagueWords = ['thing','things','stuff','something','someone','somewhere','that place','the thing'];
+
+            tokens.forEach(function(token) {
+                var clean = token.toLowerCase().replace(/[.,!?;:"'()]/g, '');
+                if (fillerWords.indexOf(clean) !== -1) {
+                    html += '<span class="t-hesit">' + token + '</span>';
+                } else if (vagueWords.indexOf(clean) !== -1) {
+                    html += '<span class="t-vague">' + token + '</span>';
+                } else {
+                    html += '<span class="t-speech">' + token + '</span>';
+                }
+            });
+
+            html += '</div></div>';
+            html += '<div class="transcript-line" style="margin-top:12px;padding-top:8px;border-top:1px solid var(--border);">';
+            html += '<div style="font-size:11px;color:var(--text-muted);">';
+            html += '📊 ' + (l.word_count || 0) + ' words · ' + (l.filler_count || 0) + ' fillers · ' + (l.vague_word_count || 0) + ' vague words';
+            html += '</div></div>';
+
+            transcriptBox.innerHTML = html;
+        }
+    } else {
+        // No data yet — show demo transcript and "Recording" badge
+        if (badge) {
+            badge.textContent = 'Recording';
+            badge.className = 'risk-pill risk-moderate';
+        }
+        // Leave the default HTML demo transcript as-is
     }
 }
 
@@ -333,6 +404,7 @@ async function processAudioUpload(file) {
         }
         var data = await res.json();
         state.screening = data;
+        state.screening.source = 'upload';  
         populateFeatureExtraction(data); 
         populateAnalysis(data);
         populateResults(data);
@@ -464,36 +536,76 @@ function populateResults(data) {
     });
 }
 
+/* ============================================================
+   POPULATE EXPLAINABILITY — Shows all drivers (risk + protective)
+   ============================================================ */
 function populateExplainability(data) {
     var pred = data.prediction;
     var features = data.features;
     var acoustic = document.getElementById('exp-acoustic');
     var transcript = document.getElementById('exp-transcript');
     var protective = document.getElementById('exp-protective');
-    acoustic.innerHTML = ''; transcript.innerHTML = ''; protective.innerHTML = '';
+    acoustic.innerHTML = '';
+    transcript.innerHTML = '';
+    protective.innerHTML = '';
 
-    pred.shap_breakdown.forEach(function(item) {
-        if (item.impact <= 0) return;
-        var isHigh = item.impact > 0.1;
-        var b = isHigh ? '3px solid var(--danger)' : '3px solid var(--warning)';
-        var c = isHigh ? 'var(--danger)' : 'var(--warning)';
+    // Which features are acoustic vs linguistic
+    var acousticFeatures = ['pause_ratio','pitch_std_hz','short_utterance_count','duration_seconds','jitter','shimmer','hnr','spectral_centroid','spectral_rolloff','response_latency','articulation_rate','phonemes_per_second','zero_crossing_rate'];
+
+    // Sort all SHAP by absolute impact (strongest first)
+    var sortedShap = pred.shap_breakdown.slice().sort(function(a, b) {
+        return Math.abs(b.impact) - Math.abs(a.impact);
+    });
+
+    sortedShap.forEach(function(item) {
+        var isAcoustic = acousticFeatures.indexOf(item.feature) !== -1;
+        var isPositive = item.impact > 0;
+        var b = isPositive ? '3px solid var(--danger)' : '3px solid var(--success)';
+        var c = isPositive ? 'var(--danger)' : 'var(--success)';
         var desc = getFeatureDesc(item.feature, features);
+
         var div = document.createElement('div');
         div.style.cssText = 'padding:14px;background:var(--bg);border-radius:var(--radius-sm);border-left:' + b + ';margin-bottom:10px;';
-        div.innerHTML = '<div style="font-size:13px;font-weight:700;color:' + c + ';margin-bottom:4px;">' + getFeatureIcon(item.feature) + ' ' + formatFeatureName(item.feature) + ' — Impact: +' + item.impact.toFixed(3) + '</div><div style="font-size:12px;color:var(--text-muted);line-height:1.6;">' + desc + '</div>';
-        if (['pause_ratio','pitch_std_hz','short_utterance_count','duration_seconds'].indexOf(item.feature) !== -1) {
+        div.innerHTML = '<div style="font-size:13px;font-weight:700;color:' + c + ';margin-bottom:4px;">' +
+            getFeatureIcon(item.feature) + ' ' + formatFeatureName(item.feature) +
+            ' — ' + (isPositive ? '↑ Risk +' : '↓ Risk ') + Math.abs(item.impact).toFixed(3) + '</div>' +
+            '<div style="font-size:12px;color:var(--text-muted);line-height:1.6;">' + desc + '</div>';
+
+        if (isAcoustic) {
             acoustic.appendChild(div);
         } else {
             transcript.appendChild(div);
         }
     });
 
+    // Fallback if a section is empty
+    if (!acoustic.hasChildNodes()) {
+        acoustic.innerHTML = '<div style="padding:14px;color:var(--text-muted);font-size:13px;">No significant acoustic risk drivers for this recording.</div>';
+    }
+    if (!transcript.hasChildNodes()) {
+        transcript.innerHTML = '<div style="padding:14px;color:var(--text-muted);font-size:13px;">No significant linguistic risk drivers for this recording.</div>';
+    }
+
+    // ─── PROTECTIVE FACTORS ───
     var edu = state.patient.edu;
     if (edu > 0) {
         var div = document.createElement('div');
-        div.style.cssText = 'padding:14px;background:#d1fae5;border-radius:var(--radius-sm);border-left:3px solid var(--success);';
+        div.style.cssText = 'padding:14px;background:#d1fae5;border-radius:var(--radius-sm);border-left:3px solid var(--success);margin-bottom:10px;';
         div.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:4px;">📖 ' + edu + ' Years of Education</div><div style="font-size:12px;color:#065f46;line-height:1.6;">' + edu + ' years of schooling provides cognitive reserve — extra brain capacity that helps compensate for early decline. The system adjusted the score upward because of this protective factor.</div>';
         protective.appendChild(div);
+    }
+
+    // Also list negative SHAP features as protective
+    var protectiveFeatures = pred.shap_breakdown.filter(function(item) { return item.impact < 0; });
+    protectiveFeatures.forEach(function(item) {
+        var div = document.createElement('div');
+        div.style.cssText = 'padding:14px;background:#d1fae5;border-radius:var(--radius-sm);border-left:3px solid var(--success);margin-bottom:10px;';
+        div.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:4px;">' + getFeatureIcon(item.feature) + ' ' + formatFeatureName(item.feature) + '</div><div style="font-size:12px;color:#065f46;line-height:1.6;">This feature acted as a protective factor, reducing the risk score by ' + Math.abs(item.impact).toFixed(4) + ' points.</div>';
+        protective.appendChild(div);
+    });
+
+    if (!protective.hasChildNodes()) {
+        protective.innerHTML = '<div style="padding:14px;color:var(--text-muted);font-size:13px;">No protective factors identified for this recording.</div>';
     }
 }
 
@@ -613,7 +725,15 @@ function getFeatureDesc(name, features) {
         'pause_ratio': Math.round(a.pause_ratio * 100) + '% of the recording was silence. Healthy speech has 15–30% silence. Extended pauses suggest word-retrieval difficulty.',
         'pitch_std_hz': 'Pitch varied by only ' + a.pitch_std_hz + ' Hz. Healthy speech has 40–70 Hz. A monotone voice can indicate reduced motor control.',
         'short_utterance_count': 'The audio contained ' + a.short_utterance_count + ' very short speech segments that Whisper could not transcribe. These are likely "um" sounds or aborted word starts.',
-        'duration_seconds': 'The recording was ' + a.duration_seconds + ' seconds. Extended duration with the same word count suggests slower, effortful speech.'
+        'duration_seconds': 'The recording was ' + a.duration_seconds + ' seconds. Extended duration with the same word count suggests slower, effortful speech.',
+        'jitter': 'Jitter of ' + (a.jitter || 0).toFixed(2) + '% measures pitch cycle instability. Normal is <1%. Higher values suggest less stable vocal cord control.',
+        'shimmer': 'Shimmer of ' + (a.shimmer || 0).toFixed(2) + '% measures loudness fluctuation. Normal is <4%. Higher values suggest inconsistent breath support.',
+        'hnr': 'Harmonics-to-Noise Ratio of ' + (a.hnr || 0).toFixed(1) + ' dB. Normal is >20 dB. Lower values mean more breathiness and less clear tone.',
+        'spectral_centroid': 'Spectral centroid of ' + (a.spectral_centroid || 0).toFixed(1) + ' Hz indicates where vocal energy is concentrated. Used to detect vocal tract changes.',
+        'response_latency': 'Response latency of ' + (a.response_latency || 0).toFixed(2) + ' seconds before first speech. Longer delays suggest slower processing speed.',
+        'articulation_rate': 'Articulation rate of ' + (a.articulation_rate || 0).toFixed(1) + ' syllables/sec. Slower articulation indicates effortful speech production.',
+        'phonemes_per_second': 'Phonemes per second: ' + (a.phonemes_per_second || 0).toFixed(1) + '. Fewer sounds per second suggests simplified or slowed articulation.',
+        'zero_crossing_rate': 'Zero-crossing rate of ' + (a.zero_crossing_rate || 0).toFixed(4) + ' indicates signal noisiness. Higher values can suggest breathiness or frication.'
     };
     return descs[name] || 'Significant contribution to risk score.';
 }
