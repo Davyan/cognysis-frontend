@@ -458,96 +458,97 @@
                 </div>
             </div>
 
+            
             <!-- SCREEN 5: FEATURE EXTRACTION -->
-            <div id="feature-extraction" class="screen">
-                <div class="page-header">
-                    <div><h2>Feature Extraction</h2><p>What the system listens for in the voice</p></div>
-                    <div class="header-actions">
-                        <button class="btn btn-secondary btn-sm" onclick="navTo('audio-capture')">← Back</button>
-                        <button class="btn btn-primary btn-sm" onclick="navTo('analysis')">Run AI →</button>
-                    </div>
-                </div>
+<div id="feature-extraction" class="screen">
+    <div class="page-header">
+        <div><h2>Feature Extraction</h2><p>What the system listens for in the voice</p></div>
+        <div class="header-actions">
+            <button class="btn btn-secondary btn-sm" onclick="navTo('audio-capture')">← Back</button>
+            <button class="btn btn-primary btn-sm" onclick="navTo('analysis')">Run AI →</button>
+        </div>
+    </div>
 
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">Processing Pipeline</div>
-                        <span class="badge badge-processing" id="pipe-badge">Running</span>
-                    </div>
-                    <div class="pipeline-simple pending" id="pipe-1">
-                        <div class="step-dot wait" id="dot-1">1</div>
-                        <div class="step-text">Audio Preprocessing <small>Noise reduction, normalization, resampling</small></div>
-                        <span class="step-status status-waiting" id="stat-1">Waiting</span>
-                    </div>
-                    <div class="pipeline-simple pending" id="pipe-2">
-                        <div class="step-dot wait" id="dot-2">2</div>
-                        <div class="step-text">Speech-to-Text <small>Whisper with dialect adaptation</small></div>
-                        <span class="step-status status-waiting" id="stat-2">Waiting</span>
-                    </div>
-                    <div class="pipeline-simple pending" id="pipe-3">
-                        <div class="step-dot wait" id="dot-3">3</div>
-                        <div class="step-text">Feature Extraction <small>Acoustic + Transcript analysis</small></div>
-                        <span class="step-status status-waiting" id="stat-3">Waiting</span>
-                    </div>
-                    <div class="pipeline-simple pending" id="pipe-4">
-                        <div class="step-dot wait" id="dot-4">4</div>
-                        <div class="step-text">Risk Scoring <small>XGBoost + SHAP explainability</small></div>
-                        <span class="step-status status-waiting" id="stat-4">Waiting</span>
-                    </div>
-                </div>
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Processing Pipeline</div>
+            <span class="badge badge-processing" id="pipe-badge">Running</span>
+        </div>
+        <div class="pipeline-simple pending" id="pipe-1">
+            <div class="step-dot wait" id="dot-1">1</div>
+            <div class="step-text">Audio Preprocessing <small>Noise reduction, normalization, resampling</small></div>
+            <span class="step-status status-waiting" id="stat-1">Waiting</span>
+        </div>
+        <div class="pipeline-simple pending" id="pipe-2">
+            <div class="step-dot wait" id="dot-2">2</div>
+            <div class="step-text">Speech-to-Text <small>Whisper with dialect adaptation</small></div>
+            <span class="step-status status-waiting" id="stat-2">Waiting</span>
+        </div>
+        <div class="pipeline-simple pending" id="pipe-3">
+            <div class="step-dot wait" id="dot-3">3</div>
+            <div class="step-text">Feature Extraction <small>Acoustic + Transcript analysis</small></div>
+            <span class="step-status status-waiting" id="stat-3">Waiting</span>
+        </div>
+        <div class="pipeline-simple pending" id="pipe-4">
+            <div class="step-dot wait" id="dot-4">4</div>
+            <div class="step-text">Risk Scoring <small>XGBoost + SHAP explainability</small></div>
+            <span class="step-status status-waiting" id="stat-4">Waiting</span>
+        </div>
+    </div>
 
-                <div class="grid-2">
-                    <div class="module-card acoustic" onclick="openModal('modal-acoustic')">
-                        <div class="module-arrow">→</div>
-                        <div class="module-icon">🎙️</div>
-                        <div class="module-title">Acoustic Analysis</div>
-                        <div class="module-desc">Extracted directly from the audio waveform. Language-agnostic features that capture motor planning, voice quality, and rhythmic structure.</div>
-                        <div class="module-stats">
-                            <div class="module-stat"><div class="module-stat-value" style="color: var(--accent);">142</div><div class="module-stat-label">Variables</div></div>
-                            <div class="module-stat"><div class="module-stat-value" style="color: var(--danger);">6</div><div class="module-stat-label">Flagged</div></div>
-                            <div class="module-stat"><div class="module-stat-value" style="color: var(--warning);">↑ 130%</div><div class="module-stat-label">Pause Rate</div></div>
-                        </div>
-                    </div>
-                    <div class="module-card transcript" onclick="openModal('modal-transcript')">
-                        <div class="module-arrow">→</div>
-                        <div class="module-icon">📝</div>
-                        <div class="module-title">Transcript Analysis</div>
-                        <div class="module-desc">Extracted from ASR output. Lexical, syntactic, semantic, and pragmatic markers of cognitive decline.</div>
-                        <div class="module-stats">
-                            <div class="module-stat"><div class="module-stat-value" style="color: var(--warning);">86</div><div class="module-stat-label">Variables</div></div>
-                            <div class="module-stat"><div class="module-stat-value" style="color: var(--danger);">4</div><div class="module-stat-label">Flagged</div></div>
-                            <div class="module-stat"><div class="module-stat-value" style="color: var(--danger);">↓ 42%</div><div class="module-stat-label">Vocab Diversity</div></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">🎙️ Acoustic Analysis — From the Sound Itself</div>
-                        <span class="badge badge-info">Language-free</span>
-                    </div>
-                    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">These features are extracted directly from the audio waveform. They work in <strong>any language</strong> because they measure <em>how</em> the person speaks, not <em>what</em> they say.</div>
-                    <div class="feature-category" onclick="openModal('modal-pause')"><div class="cat-icon" style="background: #fee2e2;">⏱️</div><div class="cat-info"><div class="cat-title">Pause Patterns</div><div class="cat-desc">How long and how often the person stops between words</div></div><div class="cat-status cat-flagged">Flagged</div><div class="cat-arrow">→</div></div>
-                    <div class="feature-category" onclick="openModal('modal-voice-quality')"><div class="cat-icon" style="background: #fff7ed;">🗣️</div><div class="cat-info"><div class="cat-title">Voice Quality</div><div class="cat-desc">Stability and clarity — tremors, hoarseness, breathiness</div></div><div class="cat-status cat-watch">Watch</div><div class="cat-arrow">→</div></div>
-                    <div class="feature-category" onclick="openModal('modal-speech-rate')"><div class="cat-icon" style="background: #fff7ed;">⚡</div><div class="cat-info"><div class="cat-title">Speech Rate</div><div class="cat-desc">How fast or slow, and how smoothly words flow</div></div><div class="cat-status cat-watch">Watch</div><div class="cat-arrow">→</div></div>
-                    <div class="feature-category" onclick="openModal('modal-pitch')"><div class="cat-icon" style="background: #fff7ed;">🎵</div><div class="cat-info"><div class="cat-title">Pitch & Prosody</div><div class="cat-desc">Variation in tone and melody — monotone vs. expressive</div></div><div class="cat-status cat-flagged">Flagged</div><div class="cat-arrow">→</div></div>
-                    <div class="feature-category" onclick="openModal('modal-spectral')"><div class="cat-icon" style="background: #d1fae5;">📊</div><div class="cat-info"><div class="cat-title">Spectral Features</div><div class="cat-desc">Fine-grained sound patterns revealing vocal control</div></div><div class="cat-status cat-normal">Normal</div><div class="cat-arrow">→</div></div>
-                    <div class="feature-category" onclick="openModal('modal-response-timing')"><div class="cat-icon" style="background: #fee2e2;">⏳</div><div class="cat-info"><div class="cat-title">Response Timing</div><div class="cat-desc">How long to answer, how long each turn lasts</div></div><div class="cat-status cat-flagged">Flagged</div><div class="cat-arrow">→</div></div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">📝 Transcript Analysis — From What Was Said</div>
-                        <span class="badge badge-info">Language-based</span>
-                    </div>
-                    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">These features are extracted from the words the person used. They reveal <strong>what</strong> the person said and <strong>how they organized their thoughts</strong>.</div>
-                    <div class="feature-category" onclick="openModal('modal-vocab')"><div class="cat-icon" style="background: #fee2e2;">📚</div><div class="cat-info"><div class="cat-title">Vocabulary Diversity</div><div class="cat-desc">How many different words — repetition vs. variety</div></div><div class="cat-status cat-flagged">Flagged</div><div class="cat-arrow">→</div></div>
-                    <div class="feature-category" onclick="openModal('modal-semantic')"><div class="cat-icon" style="background: #fee2e2;">🔗</div><div class="cat-info"><div class="cat-title">Semantic Coherence</div><div class="cat-desc">Whether ideas connect logically or drift off-topic</div></div><div class="cat-status cat-flagged">Flagged</div><div class="cat-arrow">→</div></div>
-                    <div class="feature-category" onclick="openModal('modal-wordfinding')"><div class="cat-icon" style="background: #fee2e2;">🔍</div><div class="cat-info"><div class="cat-title">Word-Finding Ability</div><div class="cat-desc">Struggles to name things, vague substitutes, circumlocutions</div></div><div class="cat-status cat-flagged">Flagged</div><div class="cat-arrow">→</div></div>
-                    <div class="feature-category" onclick="openModal('modal-sentence')"><div class="cat-icon" style="background: #fff7ed;">🏗️</div><div class="cat-info"><div class="cat-title">Sentence Structure</div><div class="cat-desc">Complexity, completeness, grammar, fragments</div></div><div class="cat-status cat-watch">Watch</div><div class="cat-arrow">→</div></div>
-                    <div class="feature-category" onclick="openModal('modal-disfluency')"><div class="cat-icon" style="background: #fff7ed;">💬</div><div class="cat-info"><div class="cat-title">Disfluency Markers</div><div class="cat-desc">"Um," "uh," repetitions, self-corrections</div></div><div class="cat-status cat-watch">Watch</div><div class="cat-arrow">→</div></div>
-                    <div class="feature-category" onclick="openModal('modal-memory-language')"><div class="cat-icon" style="background: #fff7ed;">🧠</div><div class="cat-info"><div class="cat-title">Memory Language</div><div class="cat-desc">"I think," "maybe" — phrases revealing uncertainty</div></div><div class="cat-status cat-watch">Watch</div><div class="cat-arrow">→</div></div>
-                </div>
+    <div class="grid-2">
+        <div class="module-card acoustic" onclick="openModal('modal-acoustic')">
+            <div class="module-arrow">→</div>
+            <div class="module-icon">🎙️</div>
+            <div class="module-title">Acoustic Analysis</div>
+            <div class="module-desc">Extracted directly from the audio waveform. Language-agnostic features that capture motor planning, voice quality, and rhythmic structure.</div>
+            <div class="module-stats">
+                <div class="module-stat"><div class="module-stat-value" style="color: var(--accent);" id="mod-acoustic-vars">142</div><div class="module-stat-label">Variables</div></div>
+                <div class="module-stat"><div class="module-stat-value" style="color: var(--danger);" id="mod-acoustic-flagged">0</div><div class="module-stat-label">Flagged</div></div>
+                <div class="module-stat"><div class="module-stat-value" style="color: var(--warning);" id="mod-acoustic-pause">—</div><div class="module-stat-label">Pause Rate</div></div>
             </div>
+        </div>
+        <div class="module-card transcript" onclick="openModal('modal-transcript')">
+            <div class="module-arrow">→</div>
+            <div class="module-icon">📝</div>
+            <div class="module-title">Transcript Analysis</div>
+            <div class="module-desc">Extracted from ASR output. Lexical, syntactic, semantic, and pragmatic markers of cognitive decline.</div>
+            <div class="module-stats">
+                <div class="module-stat"><div class="module-stat-value" style="color: var(--warning);" id="mod-transcript-vars">86</div><div class="module-stat-label">Variables</div></div>
+                <div class="module-stat"><div class="module-stat-value" style="color: var(--danger);" id="mod-transcript-flagged">0</div><div class="module-stat-label">Flagged</div></div>
+                <div class="module-stat"><div class="module-stat-value" style="color: var(--danger);" id="mod-transcript-vocab">—</div><div class="module-stat-label">Vocab Diversity</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">🎙️ Acoustic Analysis — From the Sound Itself</div>
+            <span class="badge badge-info">Language-free</span>
+        </div>
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">These features are extracted directly from the audio waveform. They work in <strong>any language</strong> because they measure <em>how</em> the person speaks, not <em>what</em> they say.</div>
+        <div class="feature-category" id="feat-pause" onclick="openModal('modal-pause')"><div class="cat-icon" style="background: #fee2e2;">⏱️</div><div class="cat-info"><div class="cat-title">Pause Patterns</div><div class="cat-desc" id="feat-pause-desc">How long and how often the person stops between words</div></div><div class="cat-status cat-flagged" id="feat-pause-status">Flagged</div><div class="cat-arrow">→</div></div>
+        <div class="feature-category" id="feat-voice" onclick="openModal('modal-voice-quality')"><div class="cat-icon" style="background: #fff7ed;">🗣️</div><div class="cat-info"><div class="cat-title">Voice Quality</div><div class="cat-desc" id="feat-voice-desc">Stability and clarity — tremors, hoarseness, breathiness</div></div><div class="cat-status cat-watch" id="feat-voice-status">Watch</div><div class="cat-arrow">→</div></div>
+        <div class="feature-category" id="feat-rate" onclick="openModal('modal-speech-rate')"><div class="cat-icon" style="background: #fff7ed;">⚡</div><div class="cat-info"><div class="cat-title">Speech Rate</div><div class="cat-desc" id="feat-rate-desc">How fast or slow, and how smoothly words flow</div></div><div class="cat-status cat-watch" id="feat-rate-status">Watch</div><div class="cat-arrow">→</div></div>
+        <div class="feature-category" id="feat-pitch" onclick="openModal('modal-pitch')"><div class="cat-icon" style="background: #fff7ed;">🎵</div><div class="cat-info"><div class="cat-title">Pitch & Prosody</div><div class="cat-desc" id="feat-pitch-desc">Variation in tone and melody — monotone vs. expressive</div></div><div class="cat-status cat-flagged" id="feat-pitch-status">Flagged</div><div class="cat-arrow">→</div></div>
+        <div class="feature-category" id="feat-spectral" onclick="openModal('modal-spectral')"><div class="cat-icon" style="background: #d1fae5;">📊</div><div class="cat-info"><div class="cat-title">Spectral Features</div><div class="cat-desc" id="feat-spectral-desc">Fine-grained sound patterns revealing vocal control</div></div><div class="cat-status cat-normal" id="feat-spectral-status">Normal</div><div class="cat-arrow">→</div></div>
+        <div class="feature-category" id="feat-timing" onclick="openModal('modal-response-timing')"><div class="cat-icon" style="background: #fee2e2;">⏳</div><div class="cat-info"><div class="cat-title">Response Timing</div><div class="cat-desc" id="feat-timing-desc">How long to answer, how long each turn lasts</div></div><div class="cat-status cat-flagged" id="feat-timing-status">Flagged</div><div class="cat-arrow">→</div></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">📝 Transcript Analysis — From What Was Said</div>
+            <span class="badge badge-info">Language-based</span>
+        </div>
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">These features are extracted from the words the person used. They reveal <strong>what</strong> the person said and <strong>how they organized their thoughts</strong>.</div>
+        <div class="feature-category" id="feat-vocab" onclick="openModal('modal-vocab')"><div class="cat-icon" style="background: #fee2e2;">📚</div><div class="cat-info"><div class="cat-title">Vocabulary Diversity</div><div class="cat-desc" id="feat-vocab-desc">How many different words — repetition vs. variety</div></div><div class="cat-status cat-flagged" id="feat-vocab-status">Flagged</div><div class="cat-arrow">→</div></div>
+        <div class="feature-category" id="feat-semantic" onclick="openModal('modal-semantic')"><div class="cat-icon" style="background: #fee2e2;">🔗</div><div class="cat-info"><div class="cat-title">Semantic Coherence</div><div class="cat-desc" id="feat-semantic-desc">Whether ideas connect logically or drift off-topic</div></div><div class="cat-status cat-flagged" id="feat-semantic-status">Flagged</div><div class="cat-arrow">→</div></div>
+        <div class="feature-category" id="feat-wordfind" onclick="openModal('modal-wordfinding')"><div class="cat-icon" style="background: #fee2e2;">🔍</div><div class="cat-info"><div class="cat-title">Word-Finding Ability</div><div class="cat-desc" id="feat-wordfind-desc">Struggles to name things, vague substitutes, circumlocutions</div></div><div class="cat-status cat-flagged" id="feat-wordfind-status">Flagged</div><div class="cat-arrow">→</div></div>
+        <div class="feature-category" id="feat-sentence" onclick="openModal('modal-sentence')"><div class="cat-icon" style="background: #fff7ed;">🏗️</div><div class="cat-info"><div class="cat-title">Sentence Structure</div><div class="cat-desc" id="feat-sentence-desc">Complexity, completeness, grammar, fragments</div></div><div class="cat-status cat-watch" id="feat-sentence-status">Watch</div><div class="cat-arrow">→</div></div>
+        <div class="feature-category" id="feat-disfluency" onclick="openModal('modal-disfluency')"><div class="cat-icon" style="background: #fff7ed;">💬</div><div class="cat-info"><div class="cat-title">Disfluency Markers</div><div class="cat-desc" id="feat-disfluency-desc">"Um," "uh," repetitions, self-corrections</div></div><div class="cat-status cat-watch" id="feat-disfluency-status">Watch</div><div class="cat-arrow">→</div></div>
+        <div class="feature-category" id="feat-memory" onclick="openModal('modal-memory-language')"><div class="cat-icon" style="background: #fff7ed;">🧠</div><div class="cat-info"><div class="cat-title">Memory Language</div><div class="cat-desc" id="feat-memory-desc">"I think," "maybe" — phrases revealing uncertainty</div></div><div class="cat-status cat-watch" id="feat-memory-status">Watch</div><div class="cat-arrow">→</div></div>
+    </div>
+</div>
 
             <!-- SCREEN 6: AI ANALYSIS -->
             <div id="analysis" class="screen">
