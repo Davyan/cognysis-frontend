@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cognysis — Cognitive Risk Screening</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="logo-icon">C</div>
+                <div><h1>Cognysis</h1><span>Cognitive Screening</span></div>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Main</div>
+                <div class="nav-item active" data-screen="dashboard" onclick="navTo('dashboard')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                    Dashboard
+                </div>
+                <div class="nav-item" data-screen="screening" onclick="navTo('screening')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                    New Screening
+                </div>
+                <div class="nav-item" data-screen="screening-upload" onclick="navTo('screening-upload')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
+                    New Screening — Upload
+                </div>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Processing</div>
+                <div class="nav-item" data-screen="audio-capture" onclick="navTo('audio-capture')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                    Audio Capture
+                </div>
+                <div class="nav-item" data-screen="feature-extraction" onclick="navTo('feature-extraction')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    Feature Extraction
+                </div>
+                <div class="nav-item" data-screen="analysis" onclick="navTo('analysis')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    AI Analysis
+                </div>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Results</div>
+                <div class="nav-item" data-screen="results" onclick="navTo('results')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Risk Report
+                </div>
+                <div class="nav-item" data-screen="explainability" onclick="navTo('explainability')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Explainability
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <div class="user-pill">
+                    <div class="user-avatar">DR</div>
+                    <div class="user-info"><div class="name">Dr. R. Brown</div><div class="role">Geriatric Specialist</div></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main">
+
+            <!-- SCREEN 1: DASHBOARD -->
+            <div id="dashboard" class="screen active">
+                <div class="page-header">
+                    <div style="display:flex;align-items:center;">
+                        <div><h2>Dashboard</h2><p>Recent screening activity</p></div>
+                        <div class="api-status checking" id="apiStatus">● Checking API...</div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary btn-sm" onclick="navTo('screening')">+ New Screening</button>
+                    </div>
+                </div>
+                <div class="grid-3">
+                    <div class="stat-card acoustic">
+                        <div class="stat-label">Screenings This Week</div>
+                        <div class="stat-value" style="color: var(--accent);" id="dash-count">0</div>
+                        <div class="stat-delta neutral">Total in database</div>
+                    </div>
+                    <div class="stat-card transcript">
+                        <div class="stat-label">High-Risk Flagged</div>
+                        <div class="stat-value" style="color: var(--danger);" id="dash-high">0</div>
+                        <div class="stat-delta negative">Require follow-up</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Model Accuracy</div>
+                        <div class="stat-value" style="color: var(--success);">0.92</div>
+                        <div class="stat-delta neutral">AUC-ROC</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">Recent Screenings</div></div>
+                    <div id="dash-history">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <h3>No screenings yet</h3>
+                            <p>Start a new screening to see results here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCREEN 2: NEW SCREENING -->
+            <div id="screening" class="screen">
+                <div class="page-header">
+                    <div><h2>New Screening</h2><p>Patient intake — choose call or upload</p></div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="navTo('dashboard')">Cancel</button>
+                        <button class="btn btn-primary btn-sm" id="btn-begin" onclick="beginScreening()">Begin →</button>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Patient Information</div></div>
+                        <div style="display: flex; flex-direction: column; gap: 14px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">First Name</label>
+                                    <input type="text" id="p-first" value="Dorothy" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;">
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Last Name</label>
+                                    <input type="text" id="p-last" value="Thompson" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;">
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Age</label>
+                                    <input type="number" id="p-age" value="72" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;">
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Sex</label>
+                                    <select id="p-sex" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; background: white;">
+                                        <option selected>Female</option><option>Male</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Education (yrs)</label>
+                                    <input type="number" id="p-edu" value="8" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;">
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Primary Language</label>
+                                <select id="p-lang" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; background: white;">
+                                    <option selected>English (Jamaican)</option><option>Patois / English Mix</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Phone Number (for live calls)</label>
+                                <input type="tel" id="p-phone" value="+18761234567" placeholder="+1 876 123 4567" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Health Background</div></div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: var(--bg); border-radius: var(--radius-sm); cursor: pointer;">
+                                <input type="checkbox" id="h-dm" checked style="width: 16px; height: 16px; accent-color: var(--accent);">
+                                <span style="font-size: 13px; font-weight: 500;">Type 2 Diabetes</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: var(--bg); border-radius: var(--radius-sm); cursor: pointer;">
+                                <input type="checkbox" id="h-htn" checked style="width: 16px; height: 16px; accent-color: var(--accent);">
+                                <span style="font-size: 13px; font-weight: 500;">Hypertension</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: var(--bg); border-radius: var(--radius-sm); cursor: pointer;">
+                                <input type="checkbox" id="h-stroke" style="width: 16px; height: 16px; accent-color: var(--accent);">
+                                <span style="font-size: 13px; font-weight: 500;">Previous Stroke / TIA</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: var(--bg); border-radius: var(--radius-sm); cursor: pointer;">
+                                <input type="checkbox" id="h-hear" style="width: 16px; height: 16px; accent-color: var(--accent);">
+                                <span style="font-size: 13px; font-weight: 500;">Hearing Impairment</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCREEN 3: NEW SCREENING — UPLOAD ONLY -->
+            <div id="screening-upload" class="screen">
+                <div class="page-header">
+                    <div><h2>New Screening — Upload</h2><p>Audio file upload only. No live call.</p></div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="navTo('dashboard')">Cancel</button>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Patient Information</div></div>
+                        <div style="display: flex; flex-direction: column; gap: 14px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">First Name</label>
+                                    <input type="text" id="p-first-upload" value="Dorothy" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;">
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Last Name</label>
+                                    <input type="text" id="p-last-upload" value="Thompson" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;">
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Age</label>
+                                    <input type="number" id="p-age-upload" value="72" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;">
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Sex</label>
+                                    <select id="p-sex-upload" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; background: white;">
+                                        <option selected>Female</option><option>Male</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Education (yrs)</label>
+                                    <input type="number" id="p-edu-upload" value="8" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;">
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Primary Language</label>
+                                <select id="p-lang-upload" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; background: white;">
+                                    <option selected>English (Jamaican)</option><option>Patois / English Mix</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Health Background</div></div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: var(--bg); border-radius: var(--radius-sm); cursor: pointer;">
+                                <input type="checkbox" id="h-dm-upload" checked style="width: 16px; height: 16px; accent-color: var(--accent);">
+                                <span style="font-size: 13px; font-weight: 500;">Type 2 Diabetes</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: var(--bg); border-radius: var(--radius-sm); cursor: pointer;">
+                                <input type="checkbox" id="h-htn-upload" checked style="width: 16px; height: 16px; accent-color: var(--accent);">
+                                <span style="font-size: 13px; font-weight: 500;">Hypertension</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: var(--bg); border-radius: var(--radius-sm); cursor: pointer;">
+                                <input type="checkbox" id="h-stroke-upload" style="width: 16px; height: 16px; accent-color: var(--accent);">
+                                <span style="font-size: 13px; font-weight: 500;">Previous Stroke / TIA</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: var(--bg); border-radius: var(--radius-sm); cursor: pointer;">
+                                <input type="checkbox" id="h-hear-upload" style="width: 16px; height: 16px; accent-color: var(--accent);">
+                                <span style="font-size: 13px; font-weight: 500;">Hearing Impairment</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" style="margin-top: 8px;">
+                    <div class="card-header"><div class="card-title">Audio Upload</div><span class="badge badge-info">File Only</span></div>
+                    <div class="upload-area" id="uploadAreaOnly" onclick="document.getElementById('fileInputOnly').click()">
+                        <input type="file" id="fileInputOnly" accept="audio/wav,audio/mp3,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm" onchange="handleFileSelectOnly(this)">
+                        <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
+                        <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 8px; font-weight: 600;">Drop or Select Audio File</p>
+                        <p style="font-size: 0.85rem; color: #a0aec0; margin-bottom: 16px;">WAV, MP3, M4A, WEBM accepted. Max 20MB.</p>
+                        <button class="btn btn-secondary" type="button">Select File</button>
+                    </div>
+                    <div id="filePreviewOnly" style="display: none; margin-top: 16px; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="font-size: 24px;">🎵</div>
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 600;" id="fileNameOnly">recording.wav</div>
+                                    <div style="font-size: 11px; color: var(--text-muted);" id="fileSizeOnly">2.4 MB</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="beginUploadScreening()">Upload & Analyze</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCREEN 4: AUDIO CAPTURE -->
+            <div id="audio-capture" class="screen">
+                <div class="page-header">
+                    <div><h2>Audio Capture</h2><p>AI-guided conversation in progress</p></div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="navTo('screening')">← Back</button>
+                        <button class="btn btn-primary btn-sm" onclick="navTo('feature-extraction')">Process →</button>
+                    </div>
+                </div>
+
+                <div class="patient-card" style="margin-bottom: 20px;">
+                    <div class="patient-avatar-lg" id="cap-avatar">DT</div>
+                    <div class="patient-details">
+                        <h3 id="cap-name">Mrs. Dorothy Thompson</h3>
+                        <div class="patient-meta" id="cap-meta">
+                            <span>72 yrs</span><span>•</span><span>Female</span><span>•</span><span>8 yrs education</span>
+                        </div>
+                    </div>
+                    <div class="risk-pill risk-moderate">Recording</div>
+                </div>
+
+                <div class="card animate-in">
+                    <div class="card-header">
+                        <div class="card-title">What the AI is Listening For</div>
+                        <span class="badge badge-info">4 Tasks</span>
+                    </div>
+                    <div class="grid-2">
+                        <div class="task-card">
+                            <div class="task-header">
+                                <div class="task-num">1</div>
+                                <div class="task-title">Free Narrative Recall</div>
+                                <span class="task-badge badge-content">Content · Primary</span>
+                            </div>
+                            <div class="task-prompt">"Tell me about your day yesterday — from when you woke up to when you went to bed."</div>
+                            <div class="task-desc"><strong>Captures:</strong> Temporal sequencing, event count, semantic specificity, lexical diversity, vague substitutions.</div>
+                            <div class="task-markers">
+                                <span class="task-marker">Temporal order</span>
+                                <span class="task-marker">Event count</span>
+                                <span class="task-marker">Vague words</span>
+                            </div>
+                        </div>
+                        <div class="task-card">
+                            <div class="task-header">
+                                <div class="task-num">2</div>
+                                <div class="task-title">Episodic Probing</div>
+                                <span class="task-badge badge-content">Content · Primary</span>
+                            </div>
+                            <div class="task-prompt">"You mentioned breakfast — who made it? What time was it? Where were you sitting?"</div>
+                            <div class="task-desc"><strong>Captures:</strong> Whether prompting unlocks detail (healthy) or produces continued vagueness (retrieval failure).</div>
+                            <div class="task-markers">
+                                <span class="task-marker">Detail unlocked</span>
+                                <span class="task-marker">Confabulation</span>
+                            </div>
+                        </div>
+                        <div class="task-card">
+                            <div class="task-header">
+                                <div class="task-num">3</div>
+                                <div class="task-title">Orientation Questions</div>
+                                <span class="task-badge badge-acoustic">Acoustic · Secondary</span>
+                            </div>
+                            <div class="task-prompt">"What day is it today? What month? What year?"</div>
+                            <div class="task-desc"><strong>Captures:</strong> Factual accuracy, response latency, hesitation markers. Orientation pauses signal retrieval speed.</div>
+                            <div class="task-markers">
+                                <span class="task-marker">Accuracy</span>
+                                <span class="task-marker">Latency</span>
+                                <span class="task-marker">Hesitation</span>
+                            </div>
+                        </div>
+                        <div class="task-card">
+                            <div class="task-header">
+                                <div class="task-num">4</div>
+                                <div class="task-title">Spontaneous Narrative</div>
+                                <span class="task-badge badge-content">Content · Primary</span>
+                            </div>
+                            <div class="task-prompt">"Tell me something interesting that happened to you recently — anything at all."</div>
+                            <div class="task-desc"><strong>Captures:</strong> Unprompted narrative structure, pronoun-to-noun ratio, vocabulary range, self-monitoring repairs.</div>
+                            <div class="task-markers">
+                                <span class="task-marker">Narrative structure</span>
+                                <span class="task-marker">Pronoun ratio</span>
+                                <span class="task-marker">Self-repair</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div>
+                        <div class="waveform-container">
+                            <div class="waveform-header">
+                                <h3>🔴 LIVE</h3>
+                                <div class="timer">02:34</div>
+                            </div>
+                            <div class="waveform-canvas" id="waveform"></div>
+                            <div class="waveform-legend">
+                                <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--success)"></div>Speech</div>
+                                <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--warning)"></div>Pause (2–5s)</div>
+                                <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--danger)"></div>Hesitation</div>
+                            </div>
+                            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 16px;">
+                                <button class="btn" style="background: rgba(255,255,255,0.1); color: white; padding: 10px 20px; font-size: 12px;">⏸ Pause</button>
+                                <button class="btn" style="background: var(--danger); color: white; padding: 10px 20px; font-size: 12px;">⏹ Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Live Transcript</div>
+                                <span class="badge badge-live">Live</span>
+                            </div>
+                            <div class="transcript-box">
+                                <div class="transcript-line">
+                                    <div class="transcript-speaker">AI INTERVIEWER</div>
+                                    <div class="transcript-text">Can you tell me about what you did yesterday?</div>
+                                </div>
+                                <div class="transcript-line">
+                                    <div class="transcript-speaker">PATIENT</div>
+                                    <div class="transcript-text">
+                                        <span class="t-speech">Well</span>... 
+                                        <span class="t-pause">[pause 1.2s]</span> 
+                                        <span class="t-speech">yesterday I</span>... 
+                                        <span class="t-pause">[pause 0.8s]</span> 
+                                        <span class="t-speech">went to the market</span>. 
+                                        <span class="t-pause">[pause 0.8s]</span> 
+                                        <span class="t-speech">I bought some</span>... 
+                                        <span class="t-hesit">um</span>... 
+                                        <span class="t-vague">vegetables</span>.
+                                    </div>
+                                </div>
+                                <div class="transcript-line">
+                                    <div class="transcript-speaker">AI INTERVIEWER</div>
+                                    <div class="transcript-text">What vegetables did you buy?</div>
+                                </div>
+                                <div class="transcript-line">
+                                    <div class="transcript-speaker">PATIENT</div>
+                                    <div class="transcript-text">
+                                        <span class="t-speech">I bought</span>... 
+                                        <span class="t-pause">[pause 2.1s]</span> 
+                                        <span class="t-vague">the green ones</span>... 
+                                        <span class="t-pause">[pause 1.5s]</span> 
+                                        <span class="t-speech">and some</span>... 
+                                        <span class="t-hesit">you know</span>... 
+                                        <span class="t-vague">the long ones</span>.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-top: 16px;">
+                    <div class="card" style="cursor: pointer;" onclick="triggerOutboundCall()">
+                        <div style="text-align: center; padding: 30px;">
+                            <div style="font-size: 48px; margin-bottom: 12px;">📞</div>
+                            <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 8px; font-weight: 600;">Call Patient Now</p>
+                            <p style="font-size: 0.85rem; color: #a0aec0; margin-bottom: 16px;">Twilio will dial the patient and guide them through the screening.</p>
+                            <button class="btn btn-primary" id="btn-call">📞 Call Patient</button>
+                            <p style="font-size: 11px; color: #94a3b8; margin-top: 12px;">Requires Twilio + ngrok setup</p>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                            <input type="file" id="fileInput" accept="audio/wav,audio/mp3,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm" onchange="handleFileSelect(this)">
+                            <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
+                            <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 8px; font-weight: 600;">Upload Audio File</p>
+                            <p style="font-size: 0.85rem; color: #a0aec0; margin-bottom: 16px;">WAV, MP3, M4A, WEBM accepted. Max 20MB.</p>
+                            <button class="btn btn-secondary" type="button">Select File</button>
+                        </div>
+                        <div id="filePreview" style="display: none; margin-top: 16px; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="font-size: 24px;">🎵</div>
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 600;" id="fileName">recording.wav</div>
+                                        <div style="font-size: 11px; color: var(--text-muted);" id="fileSize">2.4 MB</div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary btn-sm" onclick="uploadSelectedFile()">Upload & Analyze</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCREEN 5: FEATURE EXTRACTION -->
+            <div id="feature-extraction" class="screen">
+                <div class="page-header">
+                    <div><h2>Feature Extraction</h2><p>What the system listens for in the voice</p></div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="navTo('audio-capture')">← Back</button>
+                        <button class="btn btn-primary btn-sm" onclick="navTo('analysis')">Run AI →</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Processing Pipeline</div>
+                        <span class="badge badge-processing" id="pipe-badge">Running</span>
+                    </div>
+                    <div class="pipeline-simple pending" id="pipe-1">
+                        <div class="step-dot wait" id="dot-1">1</div>
+                        <div class="step-text">Audio Preprocessing <small>Noise reduction, normalization, resampling</small></div>
+                        <span class="step-status status-waiting" id="stat-1">Waiting</span>
+                    </div>
+                    <div class="pipeline-simple pending" id="pipe-2">
+                        <div class="step-dot wait" id="dot-2">2</div>
+                        <div class="step-text">Speech-to-Text <small>Whisper with dialect adaptation</small></div>
+                        <span class="step-status status-waiting" id="stat-2">Waiting</span>
+                    </div>
+                    <div class="pipeline-simple pending" id="pipe-3">
+                        <div class="step-dot wait" id="dot-3">3</div>
+                        <div class="step-text">Feature Extraction <small>Acoustic + Transcript analysis</small></div>
+                        <span class="step-status status-waiting" id="stat-3">Waiting</span>
+                    </div>
+                    <div class="pipeline-simple pending" id="pipe-4">
+                        <div class="step-dot wait" id="dot-4">4</div>
+                        <div class="step-text">Risk Scoring <small>XGBoost + SHAP explainability</small></div>
+                        <span class="step-status status-waiting" id="stat-4">Waiting</span>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="module-card acoustic" onclick="openModal('modal-acoustic')">
+                        <div class="module-arrow">→</div>
+                        <div class="module-icon">🎙️</div>
+                        <div class="module-title">Acoustic Analysis</div>
+                        <div class="module-desc">Extracted directly from the audio waveform. Language-agnostic features that capture motor planning, voice quality, and rhythmic structure.</div>
+                        <div class="module-stats">
+                            <div class="module-stat"><div class="module-stat-value" style="color: var(--accent);">142</div><div class="module-stat-label">Variables</div></div>
+                            <div class="module-stat"><div class="module-stat-value" style="color: var(--danger);">6</div><div class="module-stat-label">Flagged</div></div>
+                            <div class="module-stat"><div class="module-stat-value" style="color: var(--warning);">↑ 130%</div><div class="module-stat-label">Pause Rate</div></div>
+                        </div>
+                    </div>
+                    <div class="module-card transcript" onclick="openModal('modal-transcript')">
+                        <div class="module-arrow">→</div>
+                        <div class="module-icon">📝</div>
+                        <div class="module-title">Transcript Analysis</div>
+                        <div class="module-desc">Extracted from ASR output. Lexical, syntactic, semantic, and pragmatic markers of cognitive decline.</div>
+                        <div class="module-stats">
+                            <div class="module-stat"><div class="module-stat-value" style="color: var(--warning);">86</div><div class="module-stat-label">Variables</div></div>
+                            <div class="module-stat"><div class="module-stat-value" style="color: var(--danger);">4</div><div class="module-stat-label">Flagged</div></div>
+                            <div class="module-stat"><div class="module-stat-value" style="color: var(--danger);">↓ 42%</div><div class="module-stat-label">Vocab Diversity</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">🎙️ Acoustic Analysis — From the Sound Itself</div>
+                        <span class="badge badge-info">Language-free</span>
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">These features are extracted directly from the audio waveform. They work in <strong>any language</strong> because they measure <em>how</em> the person speaks, not <em>what</em> they say.</div>
+                    <div class="feature-category" onclick="openModal('modal-pause')"><div class="cat-icon" style="background: #fee2e2;">⏱️</div><div class="cat-info"><div class="cat-title">Pause Patterns</div><div class="cat-desc">How long and how often the person stops between words</div></div><div class="cat-status cat-flagged">Flagged</div><div class="cat-arrow">→</div></div>
+                    <div class="feature-category" onclick="openModal('modal-voice-quality')"><div class="cat-icon" style="background: #fff7ed;">🗣️</div><div class="cat-info"><div class="cat-title">Voice Quality</div><div class="cat-desc">Stability and clarity — tremors, hoarseness, breathiness</div></div><div class="cat-status cat-watch">Watch</div><div class="cat-arrow">→</div></div>
+                    <div class="feature-category" onclick="openModal('modal-speech-rate')"><div class="cat-icon" style="background: #fff7ed;">⚡</div><div class="cat-info"><div class="cat-title">Speech Rate</div><div class="cat-desc">How fast or slow, and how smoothly words flow</div></div><div class="cat-status cat-watch">Watch</div><div class="cat-arrow">→</div></div>
+                    <div class="feature-category" onclick="openModal('modal-pitch')"><div class="cat-icon" style="background: #fff7ed;">🎵</div><div class="cat-info"><div class="cat-title">Pitch & Prosody</div><div class="cat-desc">Variation in tone and melody — monotone vs. expressive</div></div><div class="cat-status cat-flagged">Flagged</div><div class="cat-arrow">→</div></div>
+                    <div class="feature-category" onclick="openModal('modal-spectral')"><div class="cat-icon" style="background: #d1fae5;">📊</div><div class="cat-info"><div class="cat-title">Spectral Features</div><div class="cat-desc">Fine-grained sound patterns revealing vocal control</div></div><div class="cat-status cat-normal">Normal</div><div class="cat-arrow">→</div></div>
+                    <div class="feature-category" onclick="openModal('modal-response-timing')"><div class="cat-icon" style="background: #fee2e2;">⏳</div><div class="cat-info"><div class="cat-title">Response Timing</div><div class="cat-desc">How long to answer, how long each turn lasts</div></div><div class="cat-status cat-flagged">Flagged</div><div class="cat-arrow">→</div></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">📝 Transcript Analysis — From What Was Said</div>
+                        <span class="badge badge-info">Language-based</span>
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">These features are extracted from the words the person used. They reveal <strong>what</strong> the person said and <strong>how they organized their thoughts</strong>.</div>
+                    <div class="feature-category" onclick="openModal('modal-vocab')"><div class="cat-icon" style="background: #fee2e2;">📚</div><div class="cat-info"><div class="cat-title">Vocabulary Diversity</div><div class="cat-desc">How many different words — repetition vs. variety</div></div><div class="cat-status cat-flagged">Flagged</div><div class="cat-arrow">→</div></div>
+                    <div class="feature-category" onclick="openModal('modal-semantic')"><div class="cat-icon" style="background: #fee2e2;">🔗</div><div class="cat-info"><div class="cat-title">Semantic Coherence</div><div class="cat-desc">Whether ideas connect logically or drift off-topic</div></div><div class="cat-status cat-flagged">Flagged</div><div class="cat-arrow">→</div></div>
+                    <div class="feature-category" onclick="openModal('modal-wordfinding')"><div class="cat-icon" style="background: #fee2e2;">🔍</div><div class="cat-info"><div class="cat-title">Word-Finding Ability</div><div class="cat-desc">Struggles to name things, vague substitutes, circumlocutions</div></div><div class="cat-status cat-flagged">Flagged</div><div class="cat-arrow">→</div></div>
+                    <div class="feature-category" onclick="openModal('modal-sentence')"><div class="cat-icon" style="background: #fff7ed;">🏗️</div><div class="cat-info"><div class="cat-title">Sentence Structure</div><div class="cat-desc">Complexity, completeness, grammar, fragments</div></div><div class="cat-status cat-watch">Watch</div><div class="cat-arrow">→</div></div>
+                    <div class="feature-category" onclick="openModal('modal-disfluency')"><div class="cat-icon" style="background: #fff7ed;">💬</div><div class="cat-info"><div class="cat-title">Disfluency Markers</div><div class="cat-desc">"Um," "uh," repetitions, self-corrections</div></div><div class="cat-status cat-watch">Watch</div><div class="cat-arrow">→</div></div>
+                    <div class="feature-category" onclick="openModal('modal-memory-language')"><div class="cat-icon" style="background: #fff7ed;">🧠</div><div class="cat-info"><div class="cat-title">Memory Language</div><div class="cat-desc">"I think," "maybe" — phrases revealing uncertainty</div></div><div class="cat-status cat-watch">Watch</div><div class="cat-arrow">→</div></div>
+                </div>
+            </div>
+
+            <!-- SCREEN 6: AI ANALYSIS -->
+            <div id="analysis" class="screen">
+                <div class="page-header">
+                    <div><h2>AI Analysis</h2><p>Risk scoring from combined features</p></div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="navTo('feature-extraction')">← Back</button>
+                        <button class="btn btn-primary btn-sm" onclick="saveAndGoToResults()">Results →</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Risk Score</div>
+                        <span class="badge badge-complete">Final</span>
+                    </div>
+                    <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;">
+                        <span style="font-size: 48px; font-weight: 800; color: var(--danger); letter-spacing: -2px;" id="ana-score">78</span>
+                        <span style="font-size: 20px; color: var(--text-muted); font-weight: 500;">/100</span>
+                    </div>
+                    <div class="risk-slider-labels">
+                        <span class="low">Low <span style="font-weight:400;color:#94a3b8">(0–30)</span></span>
+                        <span class="mod">Moderate <span style="font-weight:400;color:#94a3b8">(31–60)</span></span>
+                        <span class="high">High <span style="font-weight:400;color:#94a3b8">(61–100)</span></span>
+                    </div>
+                    <div class="risk-slider-container">
+                        <div class="risk-slider-seg low"></div>
+                        <div class="risk-slider-seg mod"></div>
+                        <div class="risk-slider-seg high"></div>
+                        <div class="risk-slider-marker" id="ana-marker" style="left: 78%;">78</div>
+                    </div>
+                    <p style="text-align: center; font-size: 13px; color: var(--text-muted); margin-top: 8px;">
+                        Patient falls in the <span style="font-weight: 700; color: var(--danger);" id="ana-level">High Risk</span> band.
+                    </p>
+                    <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+                        <div style="margin-bottom: 14px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-size: 12px; font-weight: 600;">Normal</span>
+                                <span style="font-size: 12px; font-weight: 700; color: var(--text-muted);">8%</span>
+                            </div>
+                            <div class="feature-bar-bg" style="height: 8px;"><div class="feature-bar-fill" style="width: 8%; background: var(--success);"></div></div>
+                        </div>
+                        <div style="margin-bottom: 14px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-size: 12px; font-weight: 600;">Mild Cognitive Impairment</span>
+                                <span style="font-size: 12px; font-weight: 700; color: var(--warning);">24%</span>
+                            </div>
+                            <div class="feature-bar-bg" style="height: 8px;"><div class="feature-bar-fill" style="width: 24%; background: var(--warning);"></div></div>
+                        </div>
+                        <div style="margin-bottom: 14px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-size: 12px; font-weight: 600;">Dementia</span>
+                                <span style="font-size: 12px; font-weight: 700; color: var(--danger);">68%</span>
+                            </div>
+                            <div class="feature-bar-bg" style="height: 8px;"><div class="feature-bar-fill" style="width: 68%; background: var(--danger);"></div></div>
+                        </div>
+                    </div>
+                    <div style="padding: 14px; background: var(--bg); border-radius: var(--radius-sm); margin-top: 20px;">
+                        <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Model Confidence</div>
+                        <div style="display: flex; gap: 20px;">
+                            <div><div style="font-size: 20px; font-weight: 800; color: var(--accent);">0.92</div><div style="font-size: 11px; color: var(--text-muted);">Accuracy (AUC)</div></div>
+                            <div><div style="font-size: 20px; font-weight: 800; color: var(--accent);">0.88</div><div style="font-size: 11px; color: var(--text-muted);">F1 Score</div></div>
+                            <div><div style="font-size: 20px; font-weight: 800; color: var(--accent);">0.85</div><div style="font-size: 11px; color: var(--text-muted);">Sensitivity</div></div>
+                            <div><div style="font-size: 20px; font-weight: 800; color: var(--accent);">0.94</div><div style="font-size: 11px; color: var(--text-muted);">Specificity</div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">Top Drivers (SHAP)</div></div>
+                    <div id="ana-shap"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">How the Score Was Reached</div></div>
+                    <div style="font-size: 13px; color: var(--text-muted); line-height: 1.7; margin-bottom: 12px;">
+                        The AI combines <strong>142 acoustic features</strong> (from the sound) and <strong>86 transcript features</strong> (from the words) into a single risk score. It was trained on 1,204 patients and learns which patterns most strongly predict cognitive decline.
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                        <div style="padding: 14px; background: var(--bg); border-radius: var(--radius-sm); text-align: center;">
+                            <div style="font-size: 24px; font-weight: 800; color: var(--danger);">↑ 130%</div>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Pause rate was the strongest signal</div>
+                        </div>
+                        <div style="padding: 14px; background: var(--bg); border-radius: var(--radius-sm); text-align: center;">
+                            <div style="font-size: 24px; font-weight: 800; color: var(--danger);">↓ 42%</div>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Vocabulary diversity dropped sharply</div>
+                        </div>
+                        <div style="padding: 14px; background: var(--bg); border-radius: var(--radius-sm); text-align: center;">
+                            <div style="font-size: 24px; font-weight: 800; color: var(--warning);">↓ 26%</div>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Semantic coherence below threshold</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCREEN 7: RESULTS -->
+            <div id="results" class="screen">
+                <div class="page-header">
+                    <div><h2>Screening Report</h2><p>Final assessment and next steps</p></div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="navTo('dashboard')">Dashboard</button>
+                        <button class="btn btn-primary btn-sm" onclick="navTo('explainability')">Why? →</button>
+                    </div>
+                </div>
+                <div class="patient-card" id="res-card" style="border-left: 4px solid var(--danger);">
+                    <div class="patient-avatar-lg" id="res-avatar">DT</div>
+                    <div class="patient-details">
+                        <h3 id="res-name">Mrs. Dorothy Thompson</h3>
+                        <div class="patient-meta" id="res-meta">
+                            <span>72 yrs</span><span>•</span><span>Female</span><span>•</span><span>8 yrs education</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 32px; font-weight: 800; color: var(--danger); letter-spacing: -2px;" id="res-score">78<span style="font-size: 14px; color: #94a3b8;">/100</span></div>
+                        <div class="risk-pill risk-high" id="res-pill">HIGH RISK</div>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div>
+                        <div class="card" style="margin-bottom: 16px;">
+                            <div class="clinical-summary">
+                                <div class="clinical-summary-title">📝 Clinical Summary</div>
+                                <div class="clinical-summary-text" id="res-summary">
+                                    The AI detected significant acoustic and linguistic markers consistent with early-to-moderate cognitive impairment. This is a screening result — not a clinical diagnosis. Neurologist referral is strongly recommended.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><div class="card-title">Recommended Next Steps</div><span class="badge badge-live">Urgent</span></div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <div class="clickable-row">
+                                    <div class="row-left"><div class="row-icon" style="background: #e0e7ff; color: #4338ca;">📋</div><div><div class="row-title">In-Person Cognitive Tests</div><div class="row-desc">MoCA, memory tests, clock drawing</div></div></div>
+                                    <div class="row-arrow">→</div>
+                                </div>
+                                <div class="clickable-row">
+                                    <div class="row-left"><div class="row-icon" style="background: #fce7f3; color: #be185d;">🩺</div><div><div class="row-title">Brain Scan (MRI)</div><div class="row-desc">Check for hippocampal shrinkage</div></div></div>
+                                    <div class="row-arrow">→</div>
+                                </div>
+                                <div class="clickable-row">
+                                    <div class="row-left"><div class="row-icon" style="background: #d1fae5; color: #065f46;">💊</div><div><div class="row-title">Review DM & BP</div><div class="row-desc">Optimize diabetes & hypertension</div></div></div>
+                                    <div class="row-arrow">→</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="card">
+                            <div class="card-header"><div class="card-title">What the System Noticed</div></div>
+                            <div id="res-findings"></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><div class="card-title">Marker Breakdown</div></div>
+                            <table class="marker-table">
+                                <thead><tr><th>Marker</th><th>Signal</th><th>Result</th></tr></thead>
+                                <tbody id="res-markers"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCREEN 8: EXPLAINABILITY -->
+            <div id="explainability" class="screen">
+                <div class="page-header">
+                    <div><h2>Why This Score?</h2><p>Plain-English breakdown</p></div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="navTo('results')">← Back</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">From the Sound of the Voice</div><span class="badge badge-info">Acoustic</span></div>
+                    <div id="exp-acoustic"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">From the Words Used</div><span class="badge badge-info">Transcript</span></div>
+                    <div id="exp-transcript"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">What Helped Lower the Risk</div><span class="badge badge-complete">Protective</span></div>
+                    <div id="exp-protective"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Spinner -->
+    <div class="spinner-overlay" id="spinner">
+        <div class="spinner-circle"></div>
+        <p style="color: var(--text-muted); font-weight: 600;">Analyzing speech patterns...</p>
+        <p style="font-size: 12px; color: #a0aec0; margin-top: 8px;" id="spinner-text">M1: Ingest → M2: Clean → M3: Features → M4: Score → M5: Explain</p>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- MODALS -->
+    <div class="modal-overlay" id="modal-acoustic">
+        <div class="modal">
+            <div class="modal-header"><h3>🎙️ Acoustic Features (142 variables)</h3><button class="modal-close" onclick="closeModal('modal-acoustic')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Extracted directly from the audio waveform. Language-agnostic.</div>
+                <div class="feature-list">
+                    <div class="feature-row"><span class="feature-name">Pause Rate</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 78%; background: var(--danger);"></div></div><span class="feature-value" style="color: var(--danger);">0.42</span></div>
+                    <div class="feature-row"><span class="feature-name">Avg Pause Duration</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 65%; background: var(--warning);"></div></div><span class="feature-value" style="color: var(--warning);">1.4s</span></div>
+                    <div class="feature-row"><span class="feature-name">Pitch Variability</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 32%; background: var(--success);"></div></div><span class="feature-value" style="color: var(--success);">↓ 34%</span></div>
+                    <div class="feature-row"><span class="feature-name">Jitter</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 58%; background: var(--warning);"></div></div><span class="feature-value" style="color: var(--warning);">1.82%</span></div>
+                    <div class="feature-row"><span class="feature-name">Shimmer</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 45%; background: var(--warning);"></div></div><span class="feature-value" style="color: var(--warning);">6.4%</span></div>
+                    <div class="feature-row"><span class="feature-name">HNR</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 38%; background: var(--danger);"></div></div><span class="feature-value" style="color: var(--danger);">12.1dB</span></div>
+                    <div class="feature-row"><span class="feature-name">Articulation Rate</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 28%; background: var(--success);"></div></div><span class="feature-value" style="color: var(--success);">3.2 w/s</span></div>
+                    <div class="feature-row"><span class="feature-name">MFCC Variance</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 55%; background: var(--warning);"></div></div><span class="feature-value" style="color: var(--warning);">0.89</span></div>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-acoustic')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-transcript">
+        <div class="modal">
+            <div class="modal-header"><h3>📝 Transcript Features (86 variables)</h3><button class="modal-close" onclick="closeModal('modal-transcript')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Extracted from ASR output. Lexical, syntactic, semantic, and pragmatic.</div>
+                <div class="feature-list">
+                    <div class="feature-row"><span class="feature-name">Type-Token Ratio</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 35%; background: var(--danger);"></div></div><span class="feature-value" style="color: var(--danger);">0.31</span></div>
+                    <div class="feature-row"><span class="feature-name">Semantic Coherence</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 42%; background: var(--danger);"></div></div><span class="feature-value" style="color: var(--danger);">0.48</span></div>
+                    <div class="feature-row"><span class="feature-name">Syntactic Complexity</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 38%; background: var(--danger);"></div></div><span class="feature-value" style="color: var(--danger);">↓ 28%</span></div>
+                    <div class="feature-row"><span class="feature-name">Word-Finding</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 72%; background: var(--danger);"></div></div><span class="feature-value" style="color: var(--danger);">High</span></div>
+                    <div class="feature-row"><span class="feature-name">Disfluency Rate</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 68%; background: var(--warning);"></div></div><span class="feature-value" style="color: var(--warning);">8.4%</span></div>
+                    <div class="feature-row"><span class="feature-name">Pronoun Ambiguity</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 55%; background: var(--warning);"></div></div><span class="feature-value" style="color: var(--warning);">0.62</span></div>
+                    <div class="feature-row"><span class="feature-name">Uncertainty Markers</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 48%; background: var(--warning);"></div></div><span class="feature-value" style="color: var(--warning);">4.2%</span></div>
+                    <div class="feature-row"><span class="feature-name">Information Content</span><div class="feature-bar-bg"><div class="feature-bar-fill" style="width: 40%; background: var(--danger);"></div></div><span class="feature-value" style="color: var(--danger);">↓ 22%</span></div>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-transcript')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-pause">
+        <div class="modal">
+            <div class="modal-header"><h3>⏱️ Pause Patterns</h3><button class="modal-close" onclick="closeModal('modal-pause')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>What it measures:</strong> How long the person stops between words, phrases, and sentences. Both silent pauses and filled pauses ("um," "uh") are counted.</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>Why it matters:</strong> Longer pauses often mean the brain is struggling to retrieve the next word from memory. In early dementia, this "word-finding pause" is one of the most reliable early signs.</div>
+                <div class="sub-feature"><div class="sub-name">Average Pause Duration</div><div class="sub-value">1.4 seconds (normal: 0.6s)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 78%; background: var(--danger);"></div></div><div class="sub-explain">2.3× longer than expected. Each extra second of silence represents cognitive effort to retrieve words.</div></div>
+                <div class="sub-feature"><div class="sub-name">Pause Frequency</div><div class="sub-value">0.42 pauses per word (normal: 0.18)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 65%; background: var(--warning);"></div></div><div class="sub-explain">Pauses happen more than twice as often as in healthy speech. Suggests frequent word-retrieval failures.</div></div>
+                <div class="sub-feature"><div class="sub-name">Within-Word Pauses</div><div class="sub-value">3 instances (normal: 0)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 85%; background: var(--danger);"></div></div><div class="sub-explain">Stopping mid-word is rare in healthy speech. Indicates severe retrieval breakdown.</div></div>
+                <div class="sub-feature"><div class="sub-name">Filled Pauses ("um," "uh")</div><div class="sub-value">4 instances in 4 minutes (normal: 1)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 72%; background: var(--danger);"></div></div><div class="sub-explain">Using filler words to buy thinking time. Common in early cognitive decline.</div></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-pause')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-voice-quality">
+        <div class="modal">
+            <div class="modal-header"><h3>🗣️ Voice Quality</h3><button class="modal-close" onclick="closeModal('modal-voice-quality')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>What it measures:</strong> Stability and clarity of the voice — tremors, hoarseness, breathiness, and how "clean" the vocal signal is.</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>Why it matters:</strong> The vocal cords are controlled by tiny muscles. As cognitive function declines, the brain's control over these muscles can weaken, leading to subtle voice changes invisible to the human ear but detectable by AI.</div>
+                <div class="sub-feature"><div class="sub-name">Jitter (Pitch Instability)</div><div class="sub-value">1.82% (normal: &lt;1.0%)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 58%; background: var(--warning);"></div></div><div class="sub-explain">Voice pitch wobbles slightly from cycle to cycle. Higher jitter = less stable vocal cord control.</div></div>
+                <div class="sub-feature"><div class="sub-name">Shimmer (Loudness Instability)</div><div class="sub-value">6.4% (normal: &lt;4.0%)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 45%; background: var(--warning);"></div></div><div class="sub-explain">Voice volume fluctuates unexpectedly. Suggests inconsistent breath support and muscle control.</div></div>
+                <div class="sub-feature"><div class="sub-name">Harmonics-to-Noise Ratio (HNR)</div><div class="sub-value">12.1 dB (normal: &gt;20 dB)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 38%; background: var(--danger);"></div></div><div class="sub-explain">How "clean" the voice is vs. how "noisy." Lower HNR = more breathiness and less clear tone.</div></div>
+                <div class="sub-feature"><div class="sub-name">Voice Breaks</div><div class="sub-value">2 instances (normal: 0)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 55%; background: var(--warning);"></div></div><div class="sub-explain">Moments where the voice cuts out briefly. Indicates intermittent loss of vocal cord closure.</div></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-voice-quality')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-speech-rate">
+        <div class="modal">
+            <div class="modal-header"><h3>⚡ Speech Rate</h3><button class="modal-close" onclick="closeModal('modal-speech-rate')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>What it measures:</strong> How fast the person speaks, how smoothly words flow together, and the rhythm of syllables.</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>Why it matters:</strong> Slower speech often reflects the brain needing more time to plan and execute each word. In dementia, articulation can become more effortful as motor planning declines.</div>
+                <div class="sub-feature"><div class="sub-name">Articulation Rate</div><div class="sub-value">3.2 words/sec (normal: 4.1)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 28%; background: var(--success);"></div></div><div class="sub-explain">22% slower than expected. Each word takes more effort to produce clearly.</div></div>
+                <div class="sub-feature"><div class="sub-name">Syllabic Interval Variability</div><div class="sub-value">0.18 (normal: 0.12)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 48%; background: var(--warning);"></div></div><div class="sub-explain">Timing between syllables is irregular. Healthy speech has a steady, predictable rhythm.</div></div>
+                <div class="sub-feature"><div class="sub-name">Phonemes Per Second</div><div class="sub-value">8.4 (normal: 11.2)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 32%; background: var(--success);"></div></div><div class="sub-explain">Fewer individual sounds produced per second. Suggests simplified or slowed articulation.</div></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-speech-rate')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-pitch">
+        <div class="modal">
+            <div class="modal-header"><h3>🎵 Pitch & Prosody</h3><button class="modal-close" onclick="closeModal('modal-pitch')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>What it measures:</strong> How much the voice rises and falls in tone — the "melody" of speech.</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>Why it matters:</strong> A monotone voice can indicate reduced emotional expression and declining motor control of the larynx. In Alzheimer's, prosody (speech melody) often flattens early.</div>
+                <div class="sub-feature"><div class="sub-name">Pitch Variability (F0 Range)</div><div class="sub-value">↓ 34% below age norm</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 32%; background: var(--success);"></div></div><div class="sub-explain">Voice stays in a narrow pitch range. Less expressive variation in tone.</div></div>
+                <div class="sub-feature"><div class="sub-name">Intonation Contour</div><div class="sub-value">Flat (normal: varied)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 42%; background: var(--warning);"></div></div><div class="sub-explain">Questions don't rise, statements don't fall. Speech sounds more robotic.</div></div>
+                <div class="sub-feature"><div class="sub-name">Monotony Index</div><div class="sub-value">0.72 (normal: &lt;0.40)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 68%; background: var(--danger);"></div></div><div class="sub-explain">High score = very little pitch movement. Strong indicator of declining vocal control.</div></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-pitch')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-spectral">
+        <div class="modal">
+            <div class="modal-header"><h3>📊 Spectral Features</h3><button class="modal-close" onclick="closeModal('modal-spectral')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>What it measures:</strong> Fine-grained sound patterns that reveal the physical shape and movement of the vocal tract — vocal cords, tongue, lips.</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>Why it matters:</strong> These features capture subtle changes in how speech is physically produced. They can detect neurological changes before they become obvious to human listeners.</div>
+                <div class="sub-feature"><div class="sub-name">MFCC Variance</div><div class="sub-value">0.89 (normal: 1.2)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 55%; background: var(--warning);"></div></div><div class="sub-explain">Mel-frequency cepstral coefficients — the "fingerprint" of voice timbre. Lower variance = less dynamic vocal tract movement.</div></div>
+                <div class="sub-feature"><div class="sub-name">Formant Dispersion (F1–F4)</div><div class="sub-value">↓ 18% below norm</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 42%; background: var(--warning);"></div></div><div class="sub-explain">Formants are resonance peaks that shape vowel sounds. Reduced dispersion suggests less precise tongue positioning.</div></div>
+                <div class="sub-feature"><div class="sub-name">Spectral Slope</div><div class="sub-value">-8.2 (normal: -6.5)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 48%; background: var(--warning);"></div></div><div class="sub-explain">How energy is distributed across high vs. low frequencies. Steeper slope = less high-frequency energy = less crisp consonants.</div></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-spectral')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-response-timing">
+        <div class="modal">
+            <div class="modal-header"><h3>⏳ Response Timing</h3><button class="modal-close" onclick="closeModal('modal-response-timing')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>What it measures:</strong> How long it takes to answer a question, how long each speaking turn lasts, and how actively the person engages in back-and-forth conversation.</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>Why it matters:</strong> Delayed responses can indicate slower information processing. Shorter, less interactive turns may reflect reduced engagement or difficulty following the conversation flow.</div>
+                <div class="sub-feature"><div class="sub-name">Response Latency</div><div class="sub-value">2.8 seconds (normal: 1.5s)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 74%; background: var(--danger);"></div></div><div class="sub-explain">Takes almost twice as long to start answering. Suggests slower processing speed.</div></div>
+                <div class="sub-feature"><div class="sub-name">Average Turn Duration</div><div class="sub-value">18.4 seconds (normal: 28s)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 38%; background: var(--success);"></div></div><div class="sub-explain">Shorter speaking turns. Person gives brief answers rather than elaborating — possible reduced confidence in memory.</div></div>
+                <div class="sub-feature"><div class="sub-name">Dialog Interactivity</div><div class="sub-value">0.41 (normal: 0.65)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 38%; background: var(--danger);"></div></div><div class="sub-explain">Lower score = less back-and-forth. Person responds but doesn't actively build on the conversation.</div></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-response-timing')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-vocab">
+        <div class="modal">
+            <div class="modal-header"><h3>📚 Vocabulary Diversity</h3><button class="modal-close" onclick="closeModal('modal-vocab')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>What it measures:</strong> How many different words the person uses compared to how many total words they speak. More variety = richer vocabulary.</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>Why it matters:</strong> As memory declines, people tend to rely on a smaller set of familiar words. They may say "thing" or "stuff" instead of specific names. This narrowing of vocabulary is one of the earliest and most reliable signs.</div>
+                <div class="sub-feature"><div class="sub-name">Type-Token Ratio (TTR)</div><div class="sub-value">0.31 (normal: &gt;0.50)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 35%; background: var(--danger);"></div></div><div class="sub-explain">Only 31% of words were unique. In healthy speech, over half are unique. Strong signal of vocabulary shrinkage.</div></div>
+                <div class="sub-feature"><div class="sub-name">Moving Average TTR</div><div class="sub-value">0.28 (normal: 0.48)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 32%; background: var(--danger);"></div></div><div class="sub-explain">Even when measured in short windows, vocabulary stays repetitive. Confirms it's not just one topic being discussed.</div></div>
+                <div class="sub-feature"><div class="sub-name">Unique Word Count</div><div class="sub-value">47 words (normal: 85+)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 38%; background: var(--danger);"></div></div><div class="sub-explain">Far fewer different words used in a 4-minute sample. Suggests reduced access to semantic memory.</div></div>
+                <div class="sub-feature"><div class="sub-name">Brunet's Index</div><div class="sub-value">12.4 (normal: 8.0)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 55%; background: var(--warning);"></div></div><div class="sub-explain">Higher score = less lexical richness. Mathematical confirmation of vocabulary decline.</div></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-vocab')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-semantic">
+        <div class="modal">
+            <div class="modal-header"><h3>🔗 Semantic Coherence</h3><button class="modal-close" onclick="closeModal('modal-semantic')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>What it measures:</strong> Whether ideas connect logically and stay on topic. Does the conversation make sense from sentence to sentence?</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>Why it matters:</strong> In dementia, people may start talking about one thing and drift to another without realizing it. Or they may give vague, empty responses that don't really answer the question. This "semantic emptiness" is a hallmark of memory-related decline.</div>
+                <div class="sub-feature"><div class="sub-name">Topic Maintenance Score</div><div class="sub-value">0.48 (threshold: 0.65)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 42%; background: var(--danger);"></div></div><div class="sub-explain">Conversation drifts off-topic. When asked about vegetables, she described them as "the green ones" and "the long ones" — vague and non-specific.</div></div>
+                <div class="sub-feature"><div class="sub-name">Word Embedding Coherence</div><div class="sub-value">0.48 (threshold: 0.65)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 42%; background: var(--danger);"></div></div><div class="sub-explain">AI measures how closely related the words are in meaning. Low score = words don't form a coherent semantic cluster.</div></div>
+                <div class="sub-feature"><div class="sub-name">Information Content</div><div class="sub-value">↓ 22% below norm</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 40%; background: var(--danger);"></div></div><div class="sub-explain">Each sentence carries less factual detail. "I went to the market" vs. "I went to Coronation Market to buy callaloo and carrots."</div></div>
+                <div class="sub-feature"><div class="sub-name">Causal Link Density</div><div class="sub-value">0.12 (normal: 0.28)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 35%; background: var(--danger);"></div></div><div class="sub-explain">Fewer "because," "so," "then" connections. Narratives become a list of events rather than a connected story.</div></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-semantic')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-wordfinding">
+        <div class="modal">
+            <div class="modal-header"><h3>🔍 Word-Finding Ability</h3><button class="modal-close" onclick="closeModal('modal-wordfinding')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>What it measures:</strong> How often the person struggles to name things, uses vague substitutes, or talks around a word they can't recall.</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>Why it matters:</strong> Word-finding difficulty is often the very first symptom patients and families notice. The person knows what they want to say but can't retrieve the exact word. They may say "the thing you cook with" instead of "stove."</div>
+                <div class="sub-feature"><div class="sub-name">Circumlocutions</div><div class="sub-value">3 instances (normal: 0)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 72%; background: var(--danger);"></div></div><div class="sub-explain">Talking around a word: "the green ones" instead of "callaloo," "the long ones" instead of "cucumber."</div></div>
+                <div class="sub-feature"><div class="sub-name">Vague Word Usage</div><div class="sub-value">6 instances (normal: 1)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 68%; background: var(--danger);"></div></div><div class="sub-explain">Using generic words: "thing," "stuff," "something," "that place." Avoids specific names.</div></div>
+                <div class="sub-feature"><div class="sub-name">Naming Errors</div><div class="sub-value">2 instances (normal: 0)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 55%; background: var(--warning);"></div></div><div class="sub-explain">Calling something by the wrong name, or giving up and changing the subject.</div></div>
+                <div class="sub-feature"><div class="sub-name">Semantic Clustering</div><div class="sub-value">0.31 (normal: 0.60)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 38%; background: var(--danger);"></div></div><div class="sub-explain">When listing items (e.g., vegetables), words don't come from the same semantic category. Suggests disorganized semantic memory.</div></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-wordfinding')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-sentence">
+        <div class="modal">
+            <div class="modal-header"><h3>🏗️ Sentence Structure</h3><button class="modal-close" onclick="closeModal('modal-sentence')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>What it measures:</strong> Complexity and completeness of sentences — grammar, length, and whether thoughts are fully expressed.</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>Why it matters:</strong> As executive function declines, people may use shorter, simpler sentences. They may drop words, leave sentences unfinished, or lose track of grammatical structure. In FTD (language variant), this can be especially pronounced.</div>
+                <div class="sub-feature"><div class="sub-name">Syntactic Complexity</div><div class="sub-value">↓ 28% below norm</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 38%; background: var(--danger);"></div></div><div class="sub-explain">Sentences are shorter and simpler. Fewer subordinate clauses ("because," "although," "while").</div></div>
+                <div class="sub-feature"><div class="sub-name">Sentence Fragments</div><div class="sub-value">4 instances (normal: 0)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 52%; background: var(--warning);"></div></div><div class="sub-explain">Sentences that start but don't finish: "I went to the..." trailing off. Indicates loss of grammatical planning.</div></div>
+                <div class="sub-feature"><div class="sub-name">Grammatical Errors</div><div class="sub-value">2 instances (normal: 0)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 35%; background: var(--warning);"></div></div><div class="sub-explain">Mismatched subjects and verbs, dropped articles ("the," "a"), or incorrect word order.</div></div>
+                <div class="sub-feature"><div class="sub-name">Mean Sentence Length</div><div class="sub-value">6.2 words (normal: 9.5)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 42%; background: var(--warning);"></div></div><div class="sub-explain">Shorter sentences may reflect difficulty holding complex thoughts in working memory.</div></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-sentence')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-disfluency">
+        <div class="modal">
+            <div class="modal-header"><h3>💬 Disfluency Markers</h3><button class="modal-close" onclick="closeModal('modal-disfluency')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>What it measures:</strong> "Um," "uh," word repetitions, restarts, and self-corrections. Everyone does these, but frequency matters.</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>Why it matters:</strong> Some disfluency is normal. But excessive "ums" and repetitions can signal the brain is buffering — buying time while searching for the right word. The system distinguishes normal disfluency from dementia-related patterns.</div>
+                <div class="sub-feature"><div class="sub-name">Filled Pause Rate</div><div class="sub-value">8.4% (normal: 2.5%)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 68%; background: var(--warning);"></div></div><div class="sub-explain">"Um" and "uh" appear more than 3× as often as normal. Suggests frequent word-retrieval delays.</div></div>
+                <div class="sub-feature"><div class="sub-name">Word Repetitions</div><div class="sub-value">5 instances (normal: 1)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 55%; background: var(--warning);"></div></div><div class="sub-explain">Repeating a word immediately: "I went to to the market." Indicates motor planning glitch.</div></div>
+                <div class="sub-feature"><div class="sub-name">Self-Corrections</div><div class="sub-value">2 instances (normal: 3)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 28%; background: var(--success);"></div></div><div class="sub-explain">Surprisingly few self-corrections. Healthy speakers often catch and fix their own errors. Fewer corrections may mean reduced self-monitoring.</div></div>
+                <div class="sub-feature"><div class="sub-name">Restart Rate</div><div class="sub-value">3 instances (normal: 0)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 48%; background: var(--warning);"></div></div><div class="sub-explain">Abandoning a sentence and starting over: "I went to... yesterday I went to the market." Indicates lost train of thought.</div></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-disfluency')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-memory-language">
+        <div class="modal">
+            <div class="modal-header"><h3>🧠 Memory Language</h3><button class="modal-close" onclick="closeModal('modal-memory-language')">×</button></div>
+            <div class="modal-body">
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>What it measures:</strong> Phrases that reveal uncertainty about memory — "I think," "maybe," "probably," "I don't remember exactly."</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;"><strong>Why it matters:</strong> People with early memory decline often develop "verbal hedging" — they qualify statements because they're not sure. "I think my grandson is 12" instead of "My grandson is 12." This metacognitive awareness (knowing you might be wrong) is actually an early sign.</div>
+                <div class="sub-feature"><div class="sub-name">Uncertainty Markers</div><div class="sub-value">4.2% of words (normal: 1.5%)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 48%; background: var(--warning);"></div></div><div class="sub-explain">"I think," "maybe," "probably," "sort of" appear 3× more than normal. Suggests reduced confidence in memory accuracy.</div></div>
+                <div class="sub-feature"><div class="sub-name">Temporal Confusion</div><div class="sub-value">2 instances (normal: 0)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 42%; background: var(--warning);"></div></div><div class="sub-explain">Mixing up when things happened: "Last week... or was it the week before?" Difficulty sequencing events.</div></div>
+                <div class="sub-feature"><div class="sub-name">Episodic Detail</div><div class="sub-value">↓ 35% below norm</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 45%; background: var(--warning);"></div></div><div class="sub-explain">When recalling events, provides fewer specific details (who, what, where, when). "We went out" vs. "We went to Devon House for ice cream on Saturday."</div></div>
+                <div class="sub-feature"><div class="sub-name">Confidence Declarations</div><div class="sub-value">0 instances (normal: 2)</div><div class="sub-bar-bg"><div class="sub-bar-fill" style="width: 15%; background: var(--success);"></div></div><div class="sub-explain">Rarely says "I know" or "I remember clearly." Absence of confident memory statements is notable.</div></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-memory-language')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-recommendations">
+        <div class="modal">
+            <div class="modal-header"><h3>Clinical Recommendations</h3><button class="modal-close" onclick="closeModal('modal-recommendations')">×</button></div>
+            <div class="modal-body">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="padding: 14px; background: #e0e7ff; border-radius: var(--radius-sm); border-left: 3px solid #4338ca;">
+                        <div style="font-size: 14px; font-weight: 700; color: #4338ca; margin-bottom: 4px;">📋 In-Person Cognitive Tests</div>
+                        <div style="font-size: 12px; color: #3730a3; line-height: 1.5;">MoCA (education-adjusted), memory word lists, verbal fluency (name as many animals as you can in 1 minute), clock drawing, trail-making tests. These confirm whether the voice-based findings match standardized paper tests.</div>
+                    </div>
+                    <div style="padding: 14px; background: #fce7f3; border-radius: var(--radius-sm); border-left: 3px solid #be185d;">
+                        <div style="font-size: 14px; font-weight: 700; color: #be185d; margin-bottom: 4px;">🩺 Brain Scan (MRI)</div>
+                        <div style="font-size: 12px; color: #831843; line-height: 1.5;">Checks for shrinkage in the hippocampus (memory center) — the hallmark of Alzheimer's. Also rules out strokes, tumors, or fluid buildup that can mimic dementia.</div>
+                    </div>
+                    <div style="padding: 14px; background: #d1fae5; border-radius: var(--radius-sm); border-left: 3px solid #065f46;">
+                        <div style="font-size: 14px; font-weight: 700; color: #065f46; margin-bottom: 4px;">💊 Review Diabetes & Blood Pressure</div>
+                        <div style="font-size: 12px; color: #064e3b; line-height: 1.5;">Uncontrolled diabetes and high blood pressure can damage brain blood vessels and worsen memory. Optimizing these can slow decline or even improve cognition.</div>
+                    </div>
+                    <div style="padding: 14px; background: var(--bg); border-radius: var(--radius-sm); border-left: 3px solid var(--accent);">
+                        <div style="font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 4px;">👨‍👩‍👧 Caregiver Support</div>
+                        <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">Connect family to Jamaica Alzheimer's Association. Provide education on what to expect. Assess caregiver stress — burnout is common and preventable with early support.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-recommendations')">Close</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-indicators">
+        <div class="modal">
+            <div class="modal-header"><h3>All Key Findings</h3><button class="modal-close" onclick="closeModal('modal-indicators')">×</button></div>
+            <div class="modal-body">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); border-left: 3px solid var(--danger);"><div><div style="font-size: 13px; font-weight: 700;">Long Pauses Between Words</div><div style="font-size: 11px; color: var(--text-muted);">1.4s avg — 2.3× normal baseline</div></div><div style="font-size: 16px; font-weight: 800; color: var(--danger);">↑ 130%</div></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); border-left: 3px solid var(--danger);"><div><div style="font-size: 13px; font-weight: 700;">Repetitive Vocabulary</div><div style="font-size: 11px; color: var(--text-muted);">Using the same words over and over</div></div><div style="font-size: 16px; font-weight: 800; color: var(--danger);">↓ 42%</div></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); border-left: 3px solid var(--warning);"><div><div style="font-size: 13px; font-weight: 700;">Ideas Don't Connect Well</div><div style="font-size: 11px; color: var(--text-muted);">Conversation drifts or becomes vague</div></div><div style="font-size: 16px; font-weight: 800; color: var(--warning);">↓ 26%</div></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); border-left: 3px solid var(--warning);"><div><div style="font-size: 13px; font-weight: 700;">Slow to Answer</div><div style="font-size: 11px; color: var(--text-muted);">2.8s response time — 1.9× normal</div></div><div style="font-size: 16px; font-weight: 800; color: var(--warning);">↑ 90%</div></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); border-left: 3px solid var(--warning);"><div><div style="font-size: 13px; font-weight: 700;">Voice Became More Monotone</div><div style="font-size: 11px; color: var(--text-muted);">Less pitch variation than expected</div></div><div style="font-size: 16px; font-weight: 800; color: var(--warning);">↓ 34%</div></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); border-left: 3px solid var(--success);"><div><div style="font-size: 13px; font-weight: 700;">Education (Protective)</div><div style="font-size: 11px; color: var(--text-muted);">8 years provides cognitive reserve</div></div><div style="font-size: 16px; font-weight: 800; color: var(--success);">-4.1 pts</div></div>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary btn-sm" onclick="closeModal('modal-indicators')">Close</button></div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
