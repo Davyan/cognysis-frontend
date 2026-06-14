@@ -168,7 +168,6 @@ function populateFeatureExtraction(data) {
     var l = data.features.linguistic;
     var transcript = l.transcript || "";
 
-    // Helper to set status badge
     function setStatus(id, status, valueText) {
         var el = document.getElementById(id);
         if (!el) return;
@@ -185,69 +184,68 @@ function populateFeatureExtraction(data) {
     }
 
     // ─── ACOUSTIC ───
-    // Pause Patterns
     var pauseRatio = a.pause_ratio || 0;
-    var pauseStatus = pauseRatio > 0.35 ? 'flagged' : pauseRatio > 0.20 ? 'watch' : 'normal';
-    setStatus('feat-pause', pauseStatus, 'Pause ratio: ' + (pauseRatio * 100).toFixed(1) + '% — ' + (pauseRatio > 0.30 ? 'elevated pauses between words' : 'within typical range'));
+    var pauseStatus = pauseRatio > 0.30 ? 'flagged' : pauseRatio > 0.15 ? 'watch' : 'normal';
+    setStatus('feat-pause', pauseStatus,
+        'Pause ratio: ' + (pauseRatio * 100).toFixed(1) + '% · Avg pause: ' + (a.pause_duration_mean || 0).toFixed(2) + 's · ' + (a.pause_count || 0) + ' pauses');
 
-    // Voice Quality (proxy: pitch stability + HNR)
     var pitchStd = a.pitch_std_hz || 0;
-    var hnr = 20; // placeholder since backend doesn't compute HNR yet
-    var voiceStatus = (pitchStd < 15 || hnr < 15) ? 'flagged' : (pitchStd < 25 || hnr < 20) ? 'watch' : 'normal';
-    setStatus('feat-voice', voiceStatus, 'Pitch std: ' + pitchStd.toFixed(1) + ' Hz — ' + (pitchStd < 20 ? 'reduced variation detected' : 'stable vocal control'));
+    var hnr = a.hnr || 0;
+    var voiceStatus = (pitchStd < 20 || hnr < 15) ? 'flagged' : (pitchStd < 35 || hnr < 20) ? 'watch' : 'normal';
+    setStatus('feat-voice', voiceStatus,
+        'Jitter: ' + (a.jitter || 0).toFixed(2) + '% · Shimmer: ' + (a.shimmer || 0).toFixed(2) + '% · HNR: ' + hnr.toFixed(1) + ' dB');
 
-    // Speech Rate
     var rate = l.speech_rate_wpm || 0;
+    var artRate = a.articulation_rate || 0;
     var rateStatus = rate < 80 ? 'flagged' : rate < 110 ? 'watch' : 'normal';
-    setStatus('feat-rate', rateStatus, 'Speech rate: ' + rate.toFixed(1) + ' WPM — ' + (rate < 100 ? 'slower than typical' : 'normal pace'));
+    setStatus('feat-rate', rateStatus,
+        'Speech rate: ' + rate.toFixed(1) + ' WPM · Articulation: ' + artRate.toFixed(1) + ' syllables/sec');
 
-    // Pitch & Prosody
-    var pitchStatus = pitchStd < 20 ? 'flagged' : pitchStd < 35 ? 'watch' : 'normal';
-    setStatus('feat-pitch', pitchStatus, 'Pitch variation: ' + pitchStd.toFixed(1) + ' Hz — ' + (pitchStd < 25 ? 'monotone tendencies detected' : 'expressive range'));
+    var pitchStatus = pitchStd < 25 ? 'flagged' : pitchStd < 40 ? 'watch' : 'normal';
+    setStatus('feat-pitch', pitchStatus,
+        'Pitch std: ' + pitchStd.toFixed(1) + ' Hz · Monotony index: ' + (a.monotony_index || 0).toFixed(2));
 
-    // Spectral Features (proxy: MFCC variance)
-    var mfccVar = a.mfcc_mean ? 1.0 : 0.89; // placeholder
     var spectralStatus = 'normal';
-    setStatus('feat-spectral', spectralStatus, 'MFCC fingerprint extracted — vocal tract dynamics normal');
+    setStatus('feat-spectral', spectralStatus,
+        'Spectral centroid: ' + (a.spectral_centroid || 0).toFixed(1) + ' Hz · Slope: ' + (a.spectral_slope || 0).toFixed(3));
 
-    // Response Timing (proxy: duration + short utterances)
-    var dur = a.duration_seconds || 0;
+    var latency = a.response_latency || 0;
     var shortCount = a.short_utterance_count || 0;
-    var timingStatus = (dur > 90 || shortCount > 4) ? 'flagged' : (dur > 60 || shortCount > 2) ? 'watch' : 'normal';
-    setStatus('feat-timing', timingStatus, 'Duration: ' + dur.toFixed(1) + 's, Short utterances: ' + shortCount + ' — ' + (shortCount > 3 ? 'frequent aborted starts' : 'typical turn structure'));
+    var timingStatus = (latency > 3.0 || shortCount > 4) ? 'flagged' : (latency > 1.5 || shortCount > 2) ? 'watch' : 'normal';
+    setStatus('feat-timing', timingStatus,
+        'Response latency: ' + latency.toFixed(2) + 's · Short utterances: ' + shortCount);
 
     // ─── TRANSCRIPT ───
-    // Vocabulary Diversity (proxy: word count / unique estimate)
     var wordCount = l.word_count || 0;
-    var vocabStatus = wordCount < 60 ? 'flagged' : wordCount < 120 ? 'watch' : 'normal';
-    setStatus('feat-vocab', vocabStatus, 'Word count: ' + wordCount + ' — ' + (wordCount < 80 ? 'reduced lexical output' : 'healthy vocabulary range'));
+    var ttr = l.type_token_ratio || 0;
+    var vocabStatus = ttr < 0.35 ? 'flagged' : ttr < 0.50 ? 'watch' : 'normal';
+    setStatus('feat-vocab', vocabStatus,
+        'TTR: ' + ttr.toFixed(3) + ' · ' + wordCount + ' words · ' + (l.unique_word_count || 0) + ' unique · Brunet: ' + (l.brunet_index || 0));
 
-    // Semantic Coherence (proxy: transcript length + filler ratio)
     var fillerRate = l.filler_rate || 0;
     var semStatus = (fillerRate > 0.08 || wordCount < 50) ? 'flagged' : (fillerRate > 0.04 || wordCount < 100) ? 'watch' : 'normal';
-    setStatus('feat-semantic', semStatus, 'Filler rate: ' + (fillerRate * 100).toFixed(1) + '% — ' + (fillerRate > 0.06 ? 'ideas may drift or empty' : 'coherent topic flow'));
+    setStatus('feat-semantic', semStatus,
+        'Filler rate: ' + (fillerRate * 100).toFixed(1) + '% · Sentences: ' + (l.sentence_count || 0));
 
-    // Word-Finding (proxy: fillers + short utterances as proxy for circumlocutions)
-    var wordfindStatus = (fillerRate > 0.06 || shortCount > 3) ? 'flagged' : (fillerRate > 0.03 || shortCount > 1) ? 'watch' : 'normal';
-    setStatus('feat-wordfind', wordfindStatus, 'Filled pauses: ' + l.filler_count + ' — ' + (l.filler_count > 3 ? 'frequent word-searching behavior' : 'smooth retrieval'));
+    var vagueRate = l.vague_word_rate || 0;
+    var wordfindStatus = (vagueRate > 0.06 || l.filler_count > 4) ? 'flagged' : (vagueRate > 0.03 || l.filler_count > 2) ? 'watch' : 'normal';
+    setStatus('feat-wordfind', wordfindStatus,
+        'Vague words: ' + (l.vague_word_count || 0) + ' · Circumlocutions approximated from vague substitutions');
 
-    // Sentence Structure (proxy: word count per sentence estimate)
-    var estSentences = Math.max(1, transcript.split(/[.!?]+/).length - 1);
-    var avgLen = wordCount / estSentences;
+    var avgLen = l.mean_sentence_length || 0;
     var sentStatus = avgLen < 5 ? 'flagged' : avgLen < 8 ? 'watch' : 'normal';
-    setStatus('feat-sentence', sentStatus, 'Avg sentence: ' + avgLen.toFixed(1) + ' words — ' + (avgLen < 6 ? 'simplified structure' : 'complex grammar'));
+    setStatus('feat-sentence', sentStatus,
+        'Mean sentence: ' + avgLen.toFixed(1) + ' words · ' + (l.sentence_count || 0) + ' sentences');
 
-    // Disfluency Markers
-    var disfStatus = fillerRate > 0.08 ? 'flagged' : fillerRate > 0.04 ? 'watch' : 'normal';
-    setStatus('feat-disfluency', disfStatus, 'Disfluency rate: ' + (fillerRate * 100).toFixed(1) + '% — ' + (fillerRate > 0.06 ? 'frequent "um/uh" buffering' : 'normal self-correction'));
+    var disfRate = l.disfluency_rate || 0;
+    var disfStatus = disfRate > 0.10 ? 'flagged' : disfRate > 0.05 ? 'watch' : 'normal';
+    setStatus('feat-disfluency', disfStatus,
+        'Disfluency rate: ' + (disfRate * 100).toFixed(1) + '% · Repetitions: ' + (l.repetition_count || 0) + ' · Restarts: ' + (l.restart_count || 0));
 
-    // Memory Language (proxy: uncertainty phrases in transcript)
-    var lowerTrans = transcript.toLowerCase();
-    var uncertainty = ['i think', 'maybe', 'probably', 'sort of', 'i guess', 'not sure'].filter(function(w) {
-        return lowerTrans.indexOf(w) !== -1;
-    }).length;
+    var uncertainty = l.uncertainty_count || 0;
     var memStatus = uncertainty > 3 ? 'flagged' : uncertainty > 1 ? 'watch' : 'normal';
-    setStatus('feat-memory', memStatus, 'Uncertainty markers: ' + uncertainty + ' — ' + (uncertainty > 2 ? 'frequent verbal hedging' : 'confident declarations'));
+    setStatus('feat-memory', memStatus,
+        'Uncertainty markers: ' + uncertainty + ' · Confidence phrases: ' + (l.uncertainty_count === 0 ? 'absent' : 'present'));
 
     // ─── MODULE CARD STATS ───
     var acousticFlagged = [pauseStatus, voiceStatus, pitchStatus, timingStatus].filter(function(s) { return s === 'flagged'; }).length;
@@ -256,9 +254,8 @@ function populateFeatureExtraction(data) {
     document.getElementById('mod-acoustic-flagged').textContent = acousticFlagged;
     document.getElementById('mod-transcript-flagged').textContent = transcriptFlagged;
     document.getElementById('mod-acoustic-pause').textContent = (pauseRatio * 100).toFixed(0) + '%';
-    document.getElementById('mod-transcript-vocab').textContent = wordCount + ' words';
+    document.getElementById('mod-transcript-vocab').textContent = (l.unique_word_count || 0) + ' unique';
 }
-
 /* ===== 6. FILE HANDLING ===== */
 function handleFileSelect(input) {
     var file = input.files[0];
