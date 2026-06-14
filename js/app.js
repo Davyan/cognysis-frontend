@@ -336,6 +336,7 @@ async function processAudioUpload(file) {
         }
         var data = await res.json();
         state.screening = data;
+        populateFeatureExtraction(data); 
         populateAnalysis(data);
         populateResults(data);
         populateExplainability(data);
