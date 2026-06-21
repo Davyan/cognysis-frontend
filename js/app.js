@@ -257,75 +257,7 @@ function populateAudioCapture() {
     }
 }
 
-/* ============================================================
-   POPULATE AUDIO CAPTURE — Shows real transcript after upload
-   ============================================================ */
-function populateAudioCapture() {
-    var p = state.patient;
-    var badge = document.querySelector('#audio-capture .risk-pill');
-    var transcriptBox = document.querySelector('#audio-capture .transcript-box');
 
-    // Update patient header from state
-    if (p.first) {
-        document.getElementById('cap-name').textContent = p.first + ' ' + p.last;
-        document.getElementById('cap-avatar').textContent = (p.first[0] && p.last[0]) ? (p.first[0] + p.last[0]).toUpperCase() : '??';
-        document.getElementById('cap-meta').innerHTML = '<span>' + p.age + ' yrs</span><span>•</span><span>' + p.sex + '</span><span>•</span><span>' + p.edu + ' yrs education</span>';
-    }
-
-    // If we have screening data, show real transcript
-    if (state.screening && state.screening.features && state.screening.features.linguistic) {
-        var l = state.screening.features.linguistic;
-        var transcript = l.transcript || '';
-        var source = state.screening.source || 'upload';
-
-        // Update badge based on source
-        if (badge) {
-            if (source === 'twilio') {
-                badge.textContent = '🔴 LIVE CALL';
-                badge.className = 'risk-pill risk-high';
-            } else {
-                badge.textContent = '✓ UPLOAD COMPLETE';
-                badge.className = 'risk-pill risk-low';
-            }
-        }
-
-        // Build color-coded transcript HTML
-        if (transcriptBox && transcript) {
-            var html = '<div class="transcript-line"><div class="transcript-speaker">AI INTERVIEWER</div><div class="transcript-text">Can you tell me about what you did yesterday?</div></div>';
-            html += '<div class="transcript-line"><div class="transcript-speaker">PATIENT</div><div class="transcript-text">';
-
-            var tokens = transcript.split(/(\s+)/);
-            var fillerWords = ['um','uh','erm','hmm','ah','er'];
-            var vagueWords = ['thing','things','stuff','something','someone','somewhere','that place','the thing'];
-
-            tokens.forEach(function(token) {
-                var clean = token.toLowerCase().replace(/[.,!?;:"'()]/g, '');
-                if (fillerWords.indexOf(clean) !== -1) {
-                    html += '<span class="t-hesit">' + token + '</span>';
-                } else if (vagueWords.indexOf(clean) !== -1) {
-                    html += '<span class="t-vague">' + token + '</span>';
-                } else {
-                    html += '<span class="t-speech">' + token + '</span>';
-                }
-            });
-
-            html += '</div></div>';
-            html += '<div class="transcript-line" style="margin-top:12px;padding-top:8px;border-top:1px solid var(--border);">';
-            html += '<div style="font-size:11px;color:var(--text-muted);">';
-            html += '📊 ' + (l.word_count || 0) + ' words · ' + (l.filler_count || 0) + ' fillers · ' + (l.vague_word_count || 0) + ' vague words';
-            html += '</div></div>';
-
-            transcriptBox.innerHTML = html;
-        }
-    } else {
-        // No data yet — show demo transcript and "Recording" badge
-        if (badge) {
-            badge.textContent = 'Recording';
-            badge.className = 'risk-pill risk-moderate';
-        }
-        // Leave the default HTML demo transcript as-is
-    }
-}
 
 /* ===== 4. API HELPERS ===== */
 async function checkApiHealth() {
