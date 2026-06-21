@@ -172,7 +172,6 @@ function formatTime(seconds) {
 function populateAudioCapture() {
     var p = state.patient;
     var badge = document.getElementById('audio-status-badge');
-    var transcriptCard = document.getElementById('transcript-card');
 
     // Update patient header
     if (p.first) {
@@ -200,17 +199,20 @@ function populateAudioCapture() {
             }
         }
 
-        // Show transcript card
+        // ─── SHOW TRANSCRIPT CARD ───
+        var transcriptCard = document.getElementById('transcript-card');
         if (transcriptCard) transcriptCard.style.display = 'block';
 
-        // Build color-coded transcript
+        // ─── BUILD COLOR-CODED TRANSCRIPT ───
         var transcriptBox = document.getElementById('audio-capture-transcript');
         if (transcriptBox && transcript) {
             var html = '<div class="transcript-line"><div class="transcript-speaker">AI INTERVIEWER</div><div class="transcript-text">Can you tell me about what you did yesterday?</div></div>';
             html += '<div class="transcript-line"><div class="transcript-speaker">PATIENT</div><div class="transcript-text">';
+
             var tokens = transcript.split(/(\s+)/);
             var fillerWords = ['um','uh','erm','hmm','ah','er'];
             var vagueWords = ['thing','things','stuff','something','someone','somewhere','that place','the thing'];
+
             tokens.forEach(function(token) {
                 var clean = token.toLowerCase().replace(/[.,!?;:"'()]/g, '');
                 if (fillerWords.indexOf(clean) !== -1) {
@@ -221,15 +223,17 @@ function populateAudioCapture() {
                     html += '<span class="t-speech">' + token + '</span>';
                 }
             });
+
             html += '</div></div>';
             html += '<div class="transcript-line" style="margin-top:12px;padding-top:8px;border-top:1px solid var(--border);">';
             html += '<div style="font-size:11px;color:var(--text-muted);">';
             html += '📊 ' + (l.word_count || 0) + ' words · ' + (l.filler_count || 0) + ' fillers · ' + (l.vague_word_count || 0) + ' vague words';
             html += '</div></div>';
+
             transcriptBox.innerHTML = html;
         }
 
-        // If we have a buffer from file upload, draw it; otherwise live animation
+        // Draw waveform
         if (currentAudioBuffer && source !== 'twilio') {
             drawStaticWaveform(currentAudioBuffer, '#22d3ee');
         } else if (source === 'twilio') {
@@ -246,6 +250,9 @@ function populateAudioCapture() {
         document.getElementById('waveform-timer').textContent = '00:00';
         stopLiveWaveform();
         drawLiveWaveform();
+
+        // ─── HIDE TRANSCRIPT CARD WHEN NO DATA ───
+        var transcriptCard = document.getElementById('transcript-card');
         if (transcriptCard) transcriptCard.style.display = 'none';
     }
 }
