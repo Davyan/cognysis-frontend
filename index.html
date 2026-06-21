@@ -275,189 +275,92 @@
             </div>
 
             <!-- SCREEN 4: AUDIO CAPTURE -->
-            <div id="audio-capture" class="screen">
-                <div class="page-header">
-                    <div><h2>Audio Capture</h2><p>AI-guided conversation in progress</p></div>
-                    <div class="header-actions">
-                        <button class="btn btn-secondary btn-sm" onclick="navTo('screening')">← Back</button>
-                        <button class="btn btn-primary btn-sm" onclick="navTo('feature-extraction')">Process →</button>
-                    </div>
-                </div>
+<div id="audio-capture" class="screen">
+    <div class="page-header">
+        <div><h2>Audio Capture</h2><p id="audio-capture-subtitle">Record, call, or upload patient audio</p></div>
+        <div class="header-actions">
+            <button class="btn btn-secondary btn-sm" onclick="navTo('screening')">← Back</button>
+            <button class="btn btn-primary btn-sm" onclick="navTo('feature-extraction')">Process →</button>
+        </div>
+    </div>
 
-                <div class="patient-card" style="margin-bottom: 20px;">
-                    <div class="patient-avatar-lg" id="cap-avatar">DT</div>
-                    <div class="patient-details">
-                        <h3 id="cap-name">Mrs. Dorothy Thompson</h3>
-                        <div class="patient-meta" id="cap-meta">
-                            <span>72 yrs</span><span>•</span><span>Female</span><span>•</span><span>8 yrs education</span>
-                        </div>
-                    </div>
-                    <div class="risk-pill risk-moderate">Recording</div>
-                </div>
+    <div class="patient-card" style="margin-bottom: 20px;">
+        <div class="patient-avatar-lg" id="cap-avatar">DT</div>
+        <div class="patient-details">
+            <h3 id="cap-name">Mrs. Dorothy Thompson</h3>
+            <div class="patient-meta" id="cap-meta">
+                <span>72 yrs</span><span>•</span><span>Female</span><span>•</span><span>8 yrs education</span>
+            </div>
+        </div>
+        <div class="risk-pill risk-moderate" id="audio-status-badge">Ready</div>
+    </div>
 
-                <div class="card animate-in">
-                    <div class="card-header">
-                        <div class="card-title">What the AI is Listening For</div>
-                        <span class="badge badge-info">4 Tasks</span>
-                    </div>
-                    <div class="grid-2">
-                        <div class="task-card">
-                            <div class="task-header">
-                                <div class="task-num">1</div>
-                                <div class="task-title">Free Narrative Recall</div>
-                                <span class="task-badge badge-content">Content · Primary</span>
-                            </div>
-                            <div class="task-prompt">"Tell me about your day yesterday — from when you woke up to when you went to bed."</div>
-                            <div class="task-desc"><strong>Captures:</strong> Temporal sequencing, event count, semantic specificity, lexical diversity, vague substitutions.</div>
-                            <div class="task-markers">
-                                <span class="task-marker">Temporal order</span>
-                                <span class="task-marker">Event count</span>
-                                <span class="task-marker">Vague words</span>
-                            </div>
-                        </div>
-                        <div class="task-card">
-                            <div class="task-header">
-                                <div class="task-num">2</div>
-                                <div class="task-title">Episodic Probing</div>
-                                <span class="task-badge badge-content">Content · Primary</span>
-                            </div>
-                            <div class="task-prompt">"You mentioned breakfast — who made it? What time was it? Where were you sitting?"</div>
-                            <div class="task-desc"><strong>Captures:</strong> Whether prompting unlocks detail (healthy) or produces continued vagueness (retrieval failure).</div>
-                            <div class="task-markers">
-                                <span class="task-marker">Detail unlocked</span>
-                                <span class="task-marker">Confabulation</span>
-                            </div>
-                        </div>
-                        <div class="task-card">
-                            <div class="task-header">
-                                <div class="task-num">3</div>
-                                <div class="task-title">Orientation Questions</div>
-                                <span class="task-badge badge-acoustic">Acoustic · Secondary</span>
-                            </div>
-                            <div class="task-prompt">"What day is it today? What month? What year?"</div>
-                            <div class="task-desc"><strong>Captures:</strong> Factual accuracy, response latency, hesitation markers. Orientation pauses signal retrieval speed.</div>
-                            <div class="task-markers">
-                                <span class="task-marker">Accuracy</span>
-                                <span class="task-marker">Latency</span>
-                                <span class="task-marker">Hesitation</span>
-                            </div>
-                        </div>
-                        <div class="task-card">
-                            <div class="task-header">
-                                <div class="task-num">4</div>
-                                <div class="task-title">Spontaneous Narrative</div>
-                                <span class="task-badge badge-content">Content · Primary</span>
-                            </div>
-                            <div class="task-prompt">"Tell me something interesting that happened to you recently — anything at all."</div>
-                            <div class="task-desc"><strong>Captures:</strong> Unprompted narrative structure, pronoun-to-noun ratio, vocabulary range, self-monitoring repairs.</div>
-                            <div class="task-markers">
-                                <span class="task-marker">Narrative structure</span>
-                                <span class="task-marker">Pronoun ratio</span>
-                                <span class="task-marker">Self-repair</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <!-- REAL WAVEFORM -->
+    <div class="waveform-container" style="margin-bottom: 16px;">
+        <div class="waveform-header">
+            <h3 id="waveform-label">🔴 LIVE</h3>
+            <div class="timer" id="waveform-timer">00:00</div>
+        </div>
+        <canvas id="waveformCanvas" width="900" height="120" style="width: 100%; height: 120px; display: block;"></canvas>
+        <div class="waveform-legend">
+            <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--success)"></div>Speech</div>
+            <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--warning)"></div>Pause</div>
+            <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--danger)"></div>Hesitation</div>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 16px;">
+            <button class="btn" id="btn-pause-audio" style="background: rgba(255,255,255,0.1); color: white; padding: 10px 20px; font-size: 12px; display: none;">⏸ Pause</button>
+            <button class="btn" id="btn-stop-audio" style="background: var(--danger); color: white; padding: 10px 20px; font-size: 12px; display: none;">⏹ Stop</button>
+        </div>
+    </div>
 
-                <div class="grid-2">
-                    <div>
-                        <div class="waveform-container">
-                            <div class="waveform-header">
-                                <h3>🔴 LIVE</h3>
-                                <div class="timer">02:34</div>
-                            </div>
-                            <div class="waveform-canvas" id="waveform"></div>
-                            <div class="waveform-legend">
-                                <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--success)"></div>Speech</div>
-                                <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--warning)"></div>Pause (2–5s)</div>
-                                <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--danger)"></div>Hesitation</div>
-                            </div>
-                            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 16px;">
-                                <button class="btn" style="background: rgba(255,255,255,0.1); color: white; padding: 10px 20px; font-size: 12px;">⏸ Pause</button>
-                                <button class="btn" style="background: var(--danger); color: white; padding: 10px 20px; font-size: 12px;">⏹ Stop</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="card-title">Live Transcript</div>
-                                <span class="badge badge-live">Live</span>
-                            </div>
-                            <div class="transcript-box">
-                                <div class="transcript-line">
-                                    <div class="transcript-speaker">AI INTERVIEWER</div>
-                                    <div class="transcript-text">Can you tell me about what you did yesterday?</div>
-                                </div>
-                                <div class="transcript-line">
-                                    <div class="transcript-speaker">PATIENT</div>
-                                    <div class="transcript-text">
-                                        <span class="t-speech">Well</span>... 
-                                        <span class="t-pause">[pause 1.2s]</span> 
-                                        <span class="t-speech">yesterday I</span>... 
-                                        <span class="t-pause">[pause 0.8s]</span> 
-                                        <span class="t-speech">went to the market</span>. 
-                                        <span class="t-pause">[pause 0.8s]</span> 
-                                        <span class="t-speech">I bought some</span>... 
-                                        <span class="t-hesit">um</span>... 
-                                        <span class="t-vague">vegetables</span>.
-                                    </div>
-                                </div>
-                                <div class="transcript-line">
-                                    <div class="transcript-speaker">AI INTERVIEWER</div>
-                                    <div class="transcript-text">What vegetables did you buy?</div>
-                                </div>
-                                <div class="transcript-line">
-                                    <div class="transcript-speaker">PATIENT</div>
-                                    <div class="transcript-text">
-                                        <span class="t-speech">I bought</span>... 
-                                        <span class="t-pause">[pause 2.1s]</span> 
-                                        <span class="t-vague">the green ones</span>... 
-                                        <span class="t-pause">[pause 1.5s]</span> 
-                                        <span class="t-speech">and some</span>... 
-                                        <span class="t-hesit">you know</span>... 
-                                        <span class="t-vague">the long ones</span>.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <!-- TRANSCRIPT (shown after upload/call) -->
+    <div class="card" id="transcript-card" style="display: none;">
+        <div class="card-header">
+            <div class="card-title">Transcript</div>
+            <span class="badge badge-live" id="transcript-badge">Live</span>
+        </div>
+        <div class="transcript-box" id="audio-capture-transcript">
+            <div class="transcript-line">
+                <div class="transcript-speaker">AI INTERVIEWER</div>
+                <div class="transcript-text">Can you tell me about what you did yesterday?</div>
+            </div>
+        </div>
+    </div>
 
-                <div class="grid-2" style="margin-top: 16px;">
-                    <div class="card" style="cursor: pointer;" onclick="triggerOutboundCall()">
-                        <div style="text-align: center; padding: 30px;">
-                            <div style="font-size: 48px; margin-bottom: 12px;">📞</div>
-                            <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 8px; font-weight: 600;">Call Patient Now</p>
-                            <p style="font-size: 0.85rem; color: #a0aec0; margin-bottom: 16px;">Twilio will dial the patient and guide them through the screening.</p>
-                            <button class="btn btn-primary" id="btn-call">📞 Call Patient</button>
-                            <p style="font-size: 11px; color: #94a3b8; margin-top: 12px;">Requires Twilio + ngrok setup</p>
+    <!-- CALL / UPLOAD CHOICE -->
+    <div class="grid-2" style="margin-top: 16px;">
+        <div class="card" style="cursor: pointer;" onclick="triggerOutboundCall()">
+            <div style="text-align: center; padding: 30px;">
+                <div style="font-size: 48px; margin-bottom: 12px;">📞</div>
+                <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 8px; font-weight: 600;">Call Patient Now</p>
+                <p style="font-size: 0.85rem; color: #a0aec0; margin-bottom: 16px;">Twilio will dial the patient and guide them through the screening.</p>
+                <button class="btn btn-primary" id="btn-call">📞 Call Patient</button>
+                <p style="font-size: 11px; color: #94a3b8; margin-top: 12px;">Requires Twilio + ngrok setup</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <input type="file" id="fileInput" accept="audio/wav,audio/mp3,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm" onchange="handleFileSelect(this)">
+                <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
+                <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 8px; font-weight: 600;">Upload Audio File</p>
+                <p style="font-size: 0.85rem; color: #a0aec0; margin-bottom: 16px;">WAV, MP3, M4A, WEBM accepted. Max 20MB.</p>
+                <button class="btn btn-secondary" type="button">Select File</button>
+            </div>
+            <div id="filePreview" style="display: none; margin-top: 16px; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="font-size: 24px;">🎵</div>
+                        <div>
+                            <div style="font-size: 13px; font-weight: 600;" id="fileName">recording.wav</div>
+                            <div style="font-size: 11px; color: var(--text-muted);" id="fileSize">2.4 MB</div>
                         </div>
                     </div>
-                    <div class="card">
-                        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-                            <input type="file" id="fileInput" accept="audio/wav,audio/mp3,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm" onchange="handleFileSelect(this)">
-                            <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
-                            <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 8px; font-weight: 600;">Upload Audio File</p>
-                            <p style="font-size: 0.85rem; color: #a0aec0; margin-bottom: 16px;">WAV, MP3, M4A, WEBM accepted. Max 20MB.</p>
-                            <button class="btn btn-secondary" type="button">Select File</button>
-                        </div>
-                        <div id="filePreview" style="display: none; margin-top: 16px; padding: 12px; background: var(--bg); border-radius: var(--radius-sm); border: 1px solid var(--border);">
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="font-size: 24px;">🎵</div>
-                                    <div>
-                                        <div style="font-size: 13px; font-weight: 600;" id="fileName">recording.wav</div>
-                                        <div style="font-size: 11px; color: var(--text-muted);" id="fileSize">2.4 MB</div>
-                                    </div>
-                                </div>
-                                <button class="btn btn-primary btn-sm" onclick="uploadSelectedFile()">Upload & Analyze</button>
-                            </div>
-                        </div>
-                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="uploadSelectedFile()">Upload & Analyze</button>
                 </div>
             </div>
-
+        </div>
+    </div>
+</div>
             
             <!-- SCREEN 5: FEATURE EXTRACTION -->
 <div id="feature-extraction" class="screen">
