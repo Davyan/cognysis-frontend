@@ -67,6 +67,190 @@ function initWaveform() {
 }
 
 /* ============================================================
+   REAL WAVEFORM ENGINE — Web Audio API Canvas Renderer
+   ============================================================ */
+var audioCtx = null;
+var currentAudioBuffer = null;
+var waveformAnimId = null;
+
+function getAudioContext() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioCtx;
+}
+
+function drawStaticWaveform(audioBuffer, color) {
+    var canvas = document.getElementById('waveformCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var width = canvas.width;
+    var height = canvas.height;
+    var data = audioBuffer.getChannelData(0);
+    var step = Math.ceil(data.length / width);
+    var amp = height / 2;
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = color || '#22d3ee';
+    ctx.beginPath();
+
+    for (var i = 0; i < width; i++) {
+        var min = 1.0;
+        var max = -1.0;
+        for (var j = 0; j < step; j++) {
+            var datum = data[i * step + j];
+            if (datum < min) min = datum;
+            if (datum > max) max = datum;
+        }
+        var y1 = (1 + min) * amp;
+        var y2 = (1 + max) * amp;
+        ctx.fillRect(i, y1, 1, Math.max(1, y2 - y1));
+    }
+}
+
+function drawLiveWaveform() {
+    var canvas = document.getElementById('waveformCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var width = canvas.width;
+    var height = canvas.height;
+    var barCount = 80;
+    var barWidth = width / barCount;
+
+    function animate() {
+        if (!document.getElementById('waveformCanvas')) return;
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#22d3ee';
+
+        for (var i = 0; i < barCount; i++) {
+            var h = 10 + Math.random() * (height - 20);
+            var x = i * barWidth;
+            var y = (height - h) / 2;
+            ctx.fillRect(x + 1, y, barWidth - 2, h);
+        }
+        waveformAnimId = requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+function stopLiveWaveform() {
+    if (waveformAnimId) {
+        cancelAnimationFrame(waveformAnimId);
+        waveformAnimId = null;
+    }
+}
+
+function loadAudioWaveform(file) {
+    stopLiveWaveform();
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var arrayBuffer = e.target.result;
+        getAudioContext().decodeAudioData(arrayBuffer, function(buffer) {
+            currentAudioBuffer = buffer;
+            drawStaticWaveform(buffer, '#22d3ee');
+            document.getElementById('waveform-label').textContent = '📁 FILE LOADED';
+            document.getElementById('audio-status-badge').textContent = 'READY';
+            document.getElementById('audio-status-badge').className = 'risk-pill risk-low';
+            document.getElementById('waveform-timer').textContent = formatTime(buffer.duration);
+        }, function(err) {
+            console.error('Decode error:', err);
+            showToast('Could not decode audio file', 'error');
+        });
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function formatTime(seconds) {
+    var m = Math.floor(seconds / 60);
+    var s = Math.floor(seconds % 60);
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+/* ============================================================
+   POPULATE AUDIO CAPTURE — Real transcript + waveform
+   ============================================================ */
+function populateAudioCapture() {
+    var p = state.patient;
+    var badge = document.getElementById('audio-status-badge');
+    var transcriptCard = document.getElementById('transcript-card');
+
+    // Update patient header
+    if (p.first) {
+        document.getElementById('cap-name').textContent = p.first + ' ' + p.last;
+        document.getElementById('cap-avatar').textContent = (p.first[0] && p.last[0]) ? (p.first[0] + p.last[0]).toUpperCase() : '??';
+        document.getElementById('cap-meta').innerHTML = '<span>' + p.age + ' yrs</span><span>•</span><span>' + p.sex + '</span><span>•</span><span>' + p.edu + ' yrs education</span>';
+    }
+
+    // If we have screening data (upload completed), show real transcript + waveform
+    if (state.screening && state.screening.features && state.screening.features.linguistic) {
+        var l = state.screening.features.linguistic;
+        var transcript = l.transcript || '';
+        var source = state.screening.source || 'upload';
+
+        // Update badge
+        if (badge) {
+            if (source === 'twilio') {
+                badge.textContent = '🔴 LIVE CALL';
+                badge.className = 'risk-pill risk-high';
+                document.getElementById('waveform-label').textContent = '🔴 LIVE CALL';
+            } else {
+                badge.textContent = '✓ UPLOAD COMPLETE';
+                badge.className = 'risk-pill risk-low';
+                document.getElementById('waveform-label').textContent = '📁 FILE LOADED';
+            }
+        }
+
+        // Show transcript card
+        if (transcriptCard) transcriptCard.style.display = 'block';
+
+        // Build color-coded transcript
+        var transcriptBox = document.getElementById('audio-capture-transcript');
+        if (transcriptBox && transcript) {
+            var html = '<div class="transcript-line"><div class="transcript-speaker">AI INTERVIEWER</div><div class="transcript-text">Can you tell me about what you did yesterday?</div></div>';
+            html += '<div class="transcript-line"><div class="transcript-speaker">PATIENT</div><div class="transcript-text">';
+            var tokens = transcript.split(/(\s+)/);
+            var fillerWords = ['um','uh','erm','hmm','ah','er'];
+            var vagueWords = ['thing','things','stuff','something','someone','somewhere','that place','the thing'];
+            tokens.forEach(function(token) {
+                var clean = token.toLowerCase().replace(/[.,!?;:"'()]/g, '');
+                if (fillerWords.indexOf(clean) !== -1) {
+                    html += '<span class="t-hesit">' + token + '</span>';
+                } else if (vagueWords.indexOf(clean) !== -1) {
+                    html += '<span class="t-vague">' + token + '</span>';
+                } else {
+                    html += '<span class="t-speech">' + token + '</span>';
+                }
+            });
+            html += '</div></div>';
+            html += '<div class="transcript-line" style="margin-top:12px;padding-top:8px;border-top:1px solid var(--border);">';
+            html += '<div style="font-size:11px;color:var(--text-muted);">';
+            html += '📊 ' + (l.word_count || 0) + ' words · ' + (l.filler_count || 0) + ' fillers · ' + (l.vague_word_count || 0) + ' vague words';
+            html += '</div></div>';
+            transcriptBox.innerHTML = html;
+        }
+
+        // If we have a buffer from file upload, draw it; otherwise live animation
+        if (currentAudioBuffer && source !== 'twilio') {
+            drawStaticWaveform(currentAudioBuffer, '#22d3ee');
+        } else if (source === 'twilio') {
+            drawLiveWaveform();
+        }
+
+    } else {
+        // No data yet — show live animation and "Ready" badge
+        if (badge) {
+            badge.textContent = 'Ready';
+            badge.className = 'risk-pill risk-moderate';
+        }
+        document.getElementById('waveform-label').textContent = '🔴 LIVE';
+        document.getElementById('waveform-timer').textContent = '00:00';
+        stopLiveWaveform();
+        drawLiveWaveform();
+        if (transcriptCard) transcriptCard.style.display = 'none';
+    }
+}
+
+/* ============================================================
    POPULATE AUDIO CAPTURE — Shows real transcript after upload
    ============================================================ */
 function populateAudioCapture() {
@@ -350,7 +534,11 @@ function handleFileSelect(input) {
     document.getElementById('fileSize').textContent = formatFileSize(file.size);
     document.getElementById('filePreview').style.display = 'block';
     showToast('Selected: ' + file.name);
+
+    // Decode and draw real waveform immediately
+    loadAudioWaveform(file);
 }
+
 
 function handleFileSelectOnly(input) {
     var file = input.files[0];
