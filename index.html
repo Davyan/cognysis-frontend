@@ -277,13 +277,17 @@
             <!-- SCREEN 4: AUDIO CAPTURE -->
 <div id="audio-capture" class="screen">
     <div class="page-header">
-        <div><h2>Audio Capture</h2><p id="audio-capture-subtitle">Record, call, or upload patient audio</p></div>
+        <div>
+            <h2>Audio Capture</h2>
+            <p id="audio-capture-subtitle">Record, call, or upload patient audio</p>
+        </div>
         <div class="header-actions">
             <button class="btn btn-secondary btn-sm" onclick="navTo('screening')">← Back</button>
             <button class="btn btn-primary btn-sm" onclick="navTo('feature-extraction')">Process →</button>
         </div>
     </div>
 
+    <!-- Patient Card -->
     <div class="patient-card" style="margin-bottom: 20px;">
         <div class="patient-avatar-lg" id="cap-avatar">DT</div>
         <div class="patient-details">
@@ -307,14 +311,10 @@
             <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--warning)"></div>Pause</div>
             <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--danger)"></div>Hesitation</div>
         </div>
-        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 16px;">
-            <button class="btn" id="btn-pause-audio" style="background: rgba(255,255,255,0.1); color: white; padding: 10px 20px; font-size: 12px; display: none;">⏸ Pause</button>
-            <button class="btn" id="btn-stop-audio" style="background: var(--danger); color: white; padding: 10px 20px; font-size: 12px; display: none;">⏹ Stop</button>
-        </div>
     </div>
 
-    <!-- TRANSCRIPT (shown after upload/call) -->
-    <div class="card" id="transcript-card" style="display: none;">
+    <!-- TRANSCRIPT — BELOW WAVEFORM -->
+    <div class="card" id="transcript-card" style="display: none; margin-bottom: 16px;">
         <div class="card-header">
             <div class="card-title">Transcript</div>
             <span class="badge badge-live" id="transcript-badge">Live</span>
@@ -327,7 +327,7 @@
         </div>
     </div>
 
-    <!-- CALL / UPLOAD CHOICE -->
+    <!-- CALL / UPLOAD OPTIONS -->
     <div class="grid-2" style="margin-top: 16px;">
         <div class="card" style="cursor: pointer;" onclick="triggerOutboundCall()">
             <div style="text-align: center; padding: 30px;">
