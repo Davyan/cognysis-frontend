@@ -172,15 +172,20 @@ function formatTime(seconds) {
 function populateAudioCapture() {
     var p = state.patient;
     var badge = document.getElementById('audio-status-badge');
+    var transcriptCard = document.getElementById('transcript-card');
+    var transcriptBox = document.getElementById('audio-capture-transcript');
 
-    // Update patient header
+    // ─── Update patient header ───
     if (p.first) {
         document.getElementById('cap-name').textContent = p.first + ' ' + p.last;
-        document.getElementById('cap-avatar').textContent = (p.first[0] && p.last[0]) ? (p.first[0] + p.last[0]).toUpperCase() : '??';
-        document.getElementById('cap-meta').innerHTML = '<span>' + p.age + ' yrs</span><span>•</span><span>' + p.sex + '</span><span>•</span><span>' + p.edu + ' yrs education</span>';
+        var initials = (p.first[0] && p.last[0]) ? (p.first[0] + p.last[0]).toUpperCase() : '??';
+        document.getElementById('cap-avatar').textContent = initials;
+        document.getElementById('cap-meta').innerHTML =
+            '<span>' + p.age + ' yrs</span><span>•</span><span>' + p.sex +
+            '</span><span>•</span><span>' + p.edu + ' yrs education</span>';
     }
 
-    // If we have screening data (upload completed), show real transcript + waveform
+    // ─── If we have screening data, show real transcript ───
     if (state.screening && state.screening.features && state.screening.features.linguistic) {
         var l = state.screening.features.linguistic;
         var transcript = l.transcript || '';
@@ -199,12 +204,10 @@ function populateAudioCapture() {
             }
         }
 
-        // ─── SHOW TRANSCRIPT CARD ───
-        var transcriptCard = document.getElementById('transcript-card');
+        // Show transcript card
         if (transcriptCard) transcriptCard.style.display = 'block';
 
-        // ─── BUILD COLOR-CODED TRANSCRIPT ───
-        var transcriptBox = document.getElementById('audio-capture-transcript');
+        // Build color-coded transcript HTML
         if (transcriptBox && transcript) {
             var html = '<div class="transcript-line"><div class="transcript-speaker">AI INTERVIEWER</div><div class="transcript-text">Can you tell me about what you did yesterday?</div></div>';
             html += '<div class="transcript-line"><div class="transcript-speaker">PATIENT</div><div class="transcript-text">';
@@ -241,7 +244,8 @@ function populateAudioCapture() {
         }
 
     } else {
-        // No data yet — show live animation and "Ready" badge
+        // ─── No data yet — hide transcript, show live animation ───
+        if (transcriptCard) transcriptCard.style.display = 'none';
         if (badge) {
             badge.textContent = 'Ready';
             badge.className = 'risk-pill risk-moderate';
@@ -250,13 +254,8 @@ function populateAudioCapture() {
         document.getElementById('waveform-timer').textContent = '00:00';
         stopLiveWaveform();
         drawLiveWaveform();
-
-        // ─── HIDE TRANSCRIPT CARD WHEN NO DATA ───
-        var transcriptCard = document.getElementById('transcript-card');
-        if (transcriptCard) transcriptCard.style.display = 'none';
     }
 }
-
 
 
 /* ===== 4. API HELPERS ===== */
