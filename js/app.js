@@ -1,5 +1,7 @@
 /* ===== 1. CONFIG ===== */
 const API = "https://davyanh-cognysis-api.hf.space";
+const RETELL_AGENT_ID = "agent_e35f16385938a997870f832f97";   // ← Paste from Retell dashboard
+const RETELL_FROM_NUMBER = "+14244845972";      // ← Your Retell US number
 
 /* ===== 2. STATE ===== */
 let state = {
@@ -864,22 +866,39 @@ function getFeatureDesc(name, features) {
     return descs[name] || 'Significant contribution to risk score.';
 }
 
-/* ===== 11. TWILIO ===== */
+/* ===== 11. RETELL OUTBOUND CALL ===== */
 async function triggerOutboundCall() {
     var phone = document.getElementById('p-phone') ? document.getElementById('p-phone').value.trim() : '';
     if (!phone) { showToast('Please enter a phone number first', 'error'); return; }
     if (!state.patient.id) { showToast('Please register the patient first (click Begin)', 'error'); return; }
-    var endpoint = API + '/twilio/call?phone_number=' + encodeURIComponent(phone) + '&patient_id=' + state.patient.id;
-    setSpinner(true, 'Initiating Twilio call...');
+    if (RETELL_AGENT_ID === "your_agent_id_here") { 
+        showToast('⚠️ Update RETELL_AGENT_ID in app.js first', 'error'); 
+        return; 
+    }
+
+    var endpoint = API + '/api/trigger-screening-call';
+    setSpinner(true, 'Initiating Retell AI call...');
     try {
-        var res = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
+        var res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json' 
+            },
+            body: JSON.stringify({
+                patient_phone: phone,
+                patient_name: state.patient.first + ' ' + state.patient.last,
+                agent_id: RETELL_AGENT_ID,
+                from_number: RETELL_FROM_NUMBER
+            })
+        });
         if (!res.ok) {
             var err = await res.json().catch(function() { return { detail: 'Call failed' }; });
             throw new Error(err.detail || 'Call failed');
         }
         var data = await res.json();
-        showToast('Calling ' + phone + '... Call SID: ' + data.call_sid);
-        setTimeout(function() { pollForTwilioResult(); }, 30000);
+        showToast('Calling ' + phone + '... Call ID: ' + data.call_id);
+        setTimeout(function() { pollForCallResult(); }, 30000);
     } catch (e) {
         showToast(diagnoseFetchError(e, endpoint), 'error');
         console.error(e);
@@ -888,12 +907,14 @@ async function triggerOutboundCall() {
     }
 }
 
-async function pollForTwilioResult() {
+async function pollForCallResult() {
     await loadHistory();
-    var twilioScreening = state.history.find(function(s) { return s.source === 'twilio' && s.patient_name.indexOf(state.patient.first) !== -1; });
-    if (twilioScreening) {
-        showToast('Phone screening received!');
-        await loadScreening(twilioScreening.id);
+    var recentScreening = state.history.find(function(s) { 
+        return s.patient_name.indexOf(state.patient.first) !== -1; 
+    });
+    if (recentScreening) {
+        showToast('Screening result received!');
+        await loadScreening(recentScreening.id);
     } else {
         showToast('Call still in progress. Check history later.', 'warning');
     }
