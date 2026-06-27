@@ -330,14 +330,18 @@
     <!-- CALL / UPLOAD OPTIONS -->
     <div class="grid-2" style="margin-top: 16px;">
         <div class="card" style="cursor: pointer;" onclick="triggerOutboundCall()">
-            <div style="text-align: center; padding: 30px;">
-                <div style="font-size: 48px; margin-bottom: 12px;">📞</div>
-                <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 8px; font-weight: 600;">Call Patient Now</p>
-                <p style="font-size: 0.85rem; color: #a0aec0; margin-bottom: 16px;">Twilio will dial the patient and guide them through the screening.</p>
-                <button class="btn btn-primary" id="btn-call">📞 Call Patient</button>
-                <p style="font-size: 11px; color: #94a3b8; margin-top: 12px;">Requires Twilio + ngrok setup</p>
-            </div>
-        </div>
+    <div style="text-align: center; padding: 30px;">
+        <div style="font-size: 48px; margin-bottom: 12px;">📞</div>
+        <p style="font-size: 1.1rem; color: #4a5568; margin-bottom: 8px; font-weight: 600;">Call Patient Now</p>
+        <p style="font-size: 0.85rem; color: #a0aec0; margin-bottom: 16px;">
+            Retell AI will call the patient and conduct the cognitive screening.
+        </p>
+        <button class="btn btn-primary" id="btn-call">📞 Call Patient</button>
+        <p style="font-size: 11px; color: #94a3b8; margin-top: 12px;">
+            Demo uses US caller ID → Jamaican number in production
+        </p>
+    </div>
+</div>
         <div class="card">
             <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
                 <input type="file" id="fileInput" accept="audio/wav,audio/mp3,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm" onchange="handleFileSelect(this)">
