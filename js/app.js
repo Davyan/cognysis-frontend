@@ -1,6 +1,6 @@
 /* ===== 1. CONFIG ===== */
 const API = "https://davyanh-cognysis-api.hf.space";
-const RETELL_AGENT_ID = "agent_e35f16385938a997870f832f97";   // ← Paste from Retell dashboard
+const RETELL_AGENT_ID = "agent_e35f16385938a997870f832f97"; // ← Paste from Retell dashboard
 const RETELL_FROM_NUMBER = "+14244845972";      // ← Your Retell US number
 
 /* ===== 2. STATE ===== */
