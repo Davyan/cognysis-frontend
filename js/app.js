@@ -12,6 +12,36 @@ let state = {
     selectedFileOnly: null
 };
 
+async function saveScreeningSilently() {
+    if (!state.screening || !state.patient.id) {
+        console.log('Cannot save: no screening or patient data');
+        return;
+    }
+    var endpoint = API + '/screenings';
+    var pred = state.screening.prediction;
+    var params = new URLSearchParams({
+        patient_id: state.patient.id,
+        patient_name: state.patient.first + ' ' + state.patient.last,
+        filename: state.screening.filename || 'uploaded_audio.webm',
+        risk_score: pred.risk_score,
+        risk_level: pred.risk_level,
+        features_json: JSON.stringify(state.screening.features),
+        shap_json: JSON.stringify(pred.shap_breakdown),
+        explanation_json: JSON.stringify(pred.explanation)
+    });
+    try {
+        var res = await fetch(endpoint + '?' + params.toString(), { 
+            method: 'POST', 
+            headers: { 'Accept': 'application/json' } 
+        });
+        if (res.ok) {
+            console.log('Screening auto-saved');
+            await loadHistory(); // Refresh dashboard
+        }
+    } catch (e) {
+        console.log('Silent save failed:', e);
+    }
+}
 /* ===== 3. UI UTILITIES ===== */
 function navTo(screenId) {
     document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
