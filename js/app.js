@@ -570,6 +570,11 @@ async function processAudioUpload(file) {
         await new Promise(function(r) { setTimeout(r, 1500); });
         navTo('analysis');
         showToast('Analysis complete');
+        
+        // ─── AUTO-SAVE HERE ───
+        await saveScreeningSilently();
+        await loadHistory();
+        
     } catch (e) {
         showToast(diagnoseFetchError(e, endpoint), 'error');
         console.error(e);
