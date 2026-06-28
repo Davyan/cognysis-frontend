@@ -867,6 +867,8 @@ function getFeatureDesc(name, features) {
 }
 
 /* ===== 11. RETELL OUTBOUND CALL ===== */
+var callPollInterval = null;
+
 async function triggerOutboundCall() {
     var phone = document.getElementById('p-phone') ? document.getElementById('p-phone').value.trim() : '';
     if (!phone) { showToast('Please enter a phone number first', 'error'); return; }
@@ -898,7 +900,9 @@ async function triggerOutboundCall() {
         }
         var data = await res.json();
         showToast('Calling ' + phone + '... Call ID: ' + data.call_id);
-        setTimeout(function() { pollForCallResult(); }, 30000);
+        
+        // Start polling every 10 seconds for 2 minutes
+        startCallPolling(state.patient.first + ' ' + state.patient.last);
     } catch (e) {
         showToast(diagnoseFetchError(e, endpoint), 'error');
         console.error(e);
@@ -907,17 +911,54 @@ async function triggerOutboundCall() {
     }
 }
 
-async function pollForCallResult() {
-    await loadHistory();
-    var recentScreening = state.history.find(function(s) { 
-        return s.patient_name.indexOf(state.patient.first) !== -1; 
+function startCallPolling(patientName) {
+    var attempts = 0;
+    var maxAttempts = 12; // 2 minutes total
+    
+    if (callPollInterval) clearInterval(callPollInterval);
+    
+    showToast('Monitoring call... Will check for results.', 'success');
+    
+    callPollInterval = setInterval(async function() {
+        attempts++;
+        console.log('Polling for screening result... attempt ' + attempts);
+        
+        await loadHistory();
+        
+        var recentScreening = state.history.find(function(s) { 
+            return s.patient_name === patientName && s.source === 'retell'; 
+        });
+        
+        if (recentScreening) {
+            clearInterval(callPollInterval);
+            callPollInterval = null;
+            showToast('Screening result received! Loading...');
+            await loadScreening(recentScreening.id);
+            return;
+        }
+        
+        if (attempts >= maxAttempts) {
+            clearInterval(callPollInterval);
+            callPollInterval = null;
+            showToast('Call monitoring timed out. Check dashboard later.', 'warning');
+        }
+    }, 10000); // Every 10 seconds
+}
+
+// Also refresh history when navigating to dashboard
+function navTo(screenId) {
+    document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+    document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+    var target = document.getElementById(screenId);
+    if (target) target.classList.add('active');
+    var navItem = document.querySelector('.nav-item[data-screen="' + screenId + '"]');
+    if (navItem) navItem.classList.add('active');
+    document.querySelectorAll('.animate-in').forEach(function(el) {
+        el.style.animation = 'none'; el.offsetHeight; el.style.animation = '';
     });
-    if (recentScreening) {
-        showToast('Screening result received!');
-        await loadScreening(recentScreening.id);
-    } else {
-        showToast('Call still in progress. Check history later.', 'warning');
-    }
+    if (screenId === 'audio-capture') populateAudioCapture(); 
+    if (screenId === 'audio-capture') initWaveform();
+    if (screenId === 'dashboard') loadHistory(); // Auto-refresh history on dashboard
 }
 
 /* ===== 12. INITIALIZATION ===== */
