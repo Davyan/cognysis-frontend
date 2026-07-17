@@ -11,7 +11,18 @@ Static HTML dashboard for Cognysis. Deployed to Vercel for global CDN.
 5. Deploy
 
 ## Configure Backend URL
+---
+title: Cognysis
+emoji: 🧠
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_file: main.py
+---
 
+# Cognysis API
+
+Cognitive screening for Jamaican seniors via AI voice calls.
 Before deploying, open `index.html` and find this line:
 
 ```javascript
