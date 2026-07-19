@@ -6,6 +6,7 @@
     <title>Cognysis — Cognitive Risk Screening</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
+<base target="_blank">
 </head>
 <body>
     <div class="app">
@@ -45,7 +46,14 @@
                     AI Analysis
                 </div>
             </div>
-            <div class="nav-section">
+                        <div class="nav-section">
+                <div class="nav-section-title">Live</div>
+                <div class="nav-item" data-screen="live-call" onclick="navTo('live-call')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                    Live Call
+                </div>
+            </div>
+<div class="nav-section">
                 <div class="nav-section-title">Results</div>
                 <div class="nav-item" data-screen="results" onclick="navTo('results')">
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -635,7 +643,54 @@
                     <div id="exp-protective"></div>
                 </div>
             </div>
-        </main>
+        
+            <!-- SCREEN 9: LIVE CALL MONITOR -->
+            <div id="live-call" class="screen">
+                <div class="page-header">
+                    <div>
+                        <h2>Live Call Monitor</h2>
+                        <p id="live-call-subtitle">Real-time cognitive screening session</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="navTo('dashboard')">← Dashboard</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">📞 Call Information</div></div>
+                    <div class="info-row"><span class="info-label">Patient</span><span class="info-value" id="live-patient-name">Loading...</span></div>
+                    <div class="info-row"><span class="info-label">Phone</span><span class="info-value" id="live-patient-phone">...</span></div>
+                    <div class="info-row"><span class="info-label">Call ID</span><span class="info-value" id="live-call-id" style="font-family: monospace; font-size: 12px;">...</span></div>
+                    <div class="status initiated" id="live-status" style="font-size: 32px; font-weight: 800; margin: 12px 0;">LOADING...</div>
+                    <div class="timer" id="live-timer" style="font-size: 14px; color: #6b7280; margin-top: 8px;"><span class="spinner"></span> Connecting to server...</div>
+                </div>
+                <div class="card hidden" id="live-analysis-card">
+                    <div class="card-header"><div class="card-title">📊 Live Analysis</div></div>
+                    <div class="grid-3">
+                        <div class="stat-card"><div class="stat-label">Patient Words</div><div class="stat-value" style="color: #111827;" id="live-patient-words">0</div></div>
+                        <div class="stat-card"><div class="stat-label">Orientation /100</div><div class="stat-value" style="color: #111827;" id="live-orientation">0</div></div>
+                        <div class="stat-card"><div class="stat-label">Risk Level</div><div class="stat-value" id="live-risk-flag">—</div></div>
+                    </div>
+                    <div class="grid-3" style="margin-top: 12px;">
+                        <div class="stat-card"><div class="stat-label">Nurse Words</div><div class="stat-value" style="color: #111827;" id="live-agent-words">0</div></div>
+                        <div class="stat-card"><div class="stat-label">Duration</div><div class="stat-value" style="color: #111827;" id="live-duration">0s</div></div>
+                        <div class="stat-card"><div class="stat-label">Turns</div><div class="stat-value" style="color: #111827;" id="live-turns">0</div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">📝 Conversation Transcript</div></div>
+                    <div id="live-transcript" style="background: #f9fafb; padding: 20px; border-radius: 10px; max-height: 500px; overflow-y: auto;">
+                        <div style="text-align: center; padding: 40px; color: #9ca3af;"><span class="spinner"></span><p>Waiting for call to begin...</p></div>
+                    </div>
+                </div>
+                <div class="card hidden" id="live-recording-card">
+                    <div class="card-header"><div class="card-title">🔊 Dual-Channel Recording</div></div>
+                    <div id="live-recording-content">
+                        <div style="padding: 14px; background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; border-radius: 8px;">Recording is being processed by Twilio. This may take 30-60 seconds after the call ends.</div>
+                        <button class="btn btn-primary" style="margin-top: 12px;" id="live-check-recording-btn" onclick="checkLiveRecording()">Check for Recording Now</button>
+                    </div>
+                </div>
+            </div>
+</main>
     </div>
 
     <!-- Spinner -->
