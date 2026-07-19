@@ -901,7 +901,146 @@ function getFeatureDesc(name, features) {
     return descs[name] || 'Significant contribution to risk score.';
 }
 
-/* ===== 11. RETELL OUTBOUND CALL ===== */
+/* ===== 11. LIVE CALL MONITOR ===== */
+var liveCallPollInterval = null;
+var currentLiveCallId = null;
+
+function formatDuration(ms) {
+    if (!ms || ms === 0) return '0s';
+    var seconds = Math.floor(ms / 1000);
+    var mins = Math.floor(seconds / 60);
+    var secs = seconds % 60;
+    if (mins > 0) return mins + 'm ' + secs + 's';
+    return secs + 's';
+}
+
+function updateLiveRiskClass(element, risk) {
+    element.style.color = '';
+    if (risk === 'low') element.style.color = '#10b981';
+    else if (risk === 'medium') element.style.color = '#f59e0b';
+    else if (risk === 'high') element.style.color = '#ef4444';
+    else element.style.color = '#6b7280';
+}
+
+async function pollLiveCall() {
+    if (!currentLiveCallId) return;
+    try {
+        var res = await fetch(API + '/api/calls/' + currentLiveCallId);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var data = await res.json();
+
+        document.getElementById('live-patient-name').textContent = data.patient_name || 'Unknown';
+        document.getElementById('live-patient-phone').textContent = data.patient_phone || '—';
+        document.getElementById('live-call-id').textContent = data.retell_call_id || currentLiveCallId;
+
+        var statusEl = document.getElementById('live-status');
+        var status = (data.status || 'unknown').toLowerCase();
+        statusEl.textContent = data.status ? data.status.toUpperCase() : 'UNKNOWN';
+        statusEl.className = 'status ' + status;
+
+        var timerEl = document.getElementById('live-timer');
+        if (status === 'completed') {
+            timerEl.textContent = '⏱️ Duration: ' + formatDuration(data.duration_ms);
+        } else if (status === 'ongoing') {
+            timerEl.innerHTML = '<span class="spinner" style="display: inline-block; width: 20px; height: 20px; border: 3px solid #e5e7eb; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; vertical-align: middle;"></span> Call in progress...';
+        } else if (status === 'failed') {
+            timerEl.textContent = '❌ Failed: ' + (data.disconnection_reason || 'Unknown reason');
+        } else {
+            timerEl.innerHTML = '<span class="spinner" style="display: inline-block; width: 20px; height: 20px; border: 3px solid #e5e7eb; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; vertical-align: middle;"></span> ' + (data.status || 'Waiting') + '...';
+        }
+
+        if (data.status === 'completed' || data.status === 'ongoing' || (data.transcript_object && data.transcript_object.length > 0)) {
+            document.getElementById('live-analysis-card').classList.remove('hidden');
+            document.getElementById('live-patient-words').textContent = data.patient_word_count || 0;
+            document.getElementById('live-agent-words').textContent = data.agent_word_count || 0;
+            document.getElementById('live-orientation').textContent = (data.orientation_score || 0) + '/100';
+            document.getElementById('live-duration').textContent = formatDuration(data.duration_ms);
+            document.getElementById('live-turns').textContent = (data.transcript_object || []).length;
+
+            var riskEl = document.getElementById('live-risk-flag');
+            riskEl.textContent = (data.risk_flag || 'unknown').toUpperCase();
+            updateLiveRiskClass(riskEl, data.risk_flag);
+        }
+
+        if (data.transcript_object && data.transcript_object.length > 0) {
+            var transcriptDiv = document.getElementById('live-transcript');
+            transcriptDiv.innerHTML = data.transcript_object.map(function(turn, i) {
+                var isAgent = turn.role === 'agent';
+                var roleLabel = isAgent ? 'Nurse' : 'Patient';
+                var cssClass = isAgent ? 'agent' : 'user';
+                var roleClass = isAgent ? 'nurse' : 'patient';
+                var bgColor = isAgent ? '#dbeafe' : '#d1fae5';
+                var marginDir = isAgent ? 'margin-right: 60px; border-left: 4px solid #3b82f6;' : 'margin-left: 60px; text-align: right; border-right: 4px solid #10b981;';
+                return '<div style="margin: 12px 0; padding: 14px 18px; border-radius: 12px; background: ' + bgColor + '; ' + marginDir + '">' +
+                    '<div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; color: ' + (isAgent ? '#2563eb' : '#059669') + ';">' + roleLabel + '</div>' +
+                    '<div style="font-size: 15px; line-height: 1.5;">' + (turn.content || '') + '</div>' +
+                    '</div>';
+            }).join('');
+        }
+
+        var recordingCard = document.getElementById('live-recording-card');
+        if (status === 'completed' || status === 'ongoing') {
+            recordingCard.classList.remove('hidden');
+        }
+
+        if (data.recording_url) {
+            document.getElementById('live-recording-content').innerHTML = 
+                '<div style="padding: 16px; background: #fef3c7; border-radius: 10px; border: 1px solid #fcd34d;">' +
+                '<a href="' + data.recording_url + '" target="_blank" download style="color: #b45309; font-weight: 600; text-decoration: none;">🔗 Download Dual-Channel Recording</a>' +
+                '<div style="font-size: 12px; color: #92400e; margin-top: 8px;">Duration: ' + (data.recording_duration || '?') + 's | Channels: ' + (data.recording_channels || 2) + ' | Format: MP3 (Stereo)</div>' +
+                '<div style="font-size: 12px; color: #92400e; margin-top: 4px;"><strong>Channel 1</strong> = Patient audio | <strong>Channel 2</strong> = Nurse AI audio</div>' +
+                '</div>';
+        }
+
+        return data;
+    } catch (e) {
+        console.error('Poll error:', e);
+        document.getElementById('live-timer').textContent = '⚠️ Error: ' + e.message + '. Retrying...';
+        return null;
+    }
+}
+
+async function checkLiveRecording() {
+    if (!currentLiveCallId) return;
+    var btn = document.getElementById('live-check-recording-btn');
+    btn.textContent = 'Checking Twilio...';
+    btn.disabled = true;
+    try {
+        var res = await fetch(API + '/api/calls/' + currentLiveCallId + '/check-recording', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var data = await res.json();
+        if (data.status === 'found') {
+            await pollLiveCall();
+        } else {
+            btn.textContent = 'Not ready yet — try again';
+            btn.disabled = false;
+        }
+    } catch (e) {
+        console.error('Check recording error:', e);
+        btn.textContent = 'Error — try again';
+        btn.disabled = false;
+    }
+}
+
+function startLiveCallPolling(callId) {
+    currentLiveCallId = callId;
+    document.getElementById('live-analysis-card').classList.add('hidden');
+    document.getElementById('live-recording-card').classList.add('hidden');
+    document.getElementById('live-transcript').innerHTML = 
+        '<div style="text-align: center; padding: 40px; color: #9ca3af;">' +
+        '<span class="spinner" style="display: inline-block; width: 20px; height: 20px; border: 3px solid #e5e7eb; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; vertical-align: middle;"></span>' +
+        '<p>Waiting for call to begin...</p></div>';
+    navTo('live-call');
+    pollLiveCall();
+    if (liveCallPollInterval) clearInterval(liveCallPollInterval);
+    liveCallPollInterval = setInterval(pollLiveCall, 5000);
+}
+
+/* ===== 12. RETELL OUTBOUND CALL ===== */
+
 var callPollInterval = null;
 
 async function triggerOutboundCall() {
@@ -993,7 +1132,8 @@ function navTo(screenId) {
     });
     if (screenId === 'audio-capture') populateAudioCapture(); 
     if (screenId === 'audio-capture') initWaveform();
-    if (screenId === 'dashboard') loadHistory(); // Auto-refresh history on dashboard
+    if (screenId === 'dashboard') loadHistory();
+    if (screenId === 'live-call' && currentLiveCallId) pollLiveCall();
 }
 
 /* ===== 12. INITIALIZATION ===== */
