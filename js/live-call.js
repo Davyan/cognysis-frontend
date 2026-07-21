@@ -48,6 +48,8 @@ async function pollCall(callId) {
             timerEl.innerHTML = `<span class="spinner"></span> Call in progress...`;
         } else if (status === 'failed') {
             timerEl.textContent = `❌ Failed: ${data.disconnection_reason || 'Unknown reason'}`;
+        } else if (status === 'no_answer') {
+            timerEl.textContent = '📞 No answer or voicemail — try calling again';
         } else {
             timerEl.innerHTML = `<span class="spinner"></span> ${data.status || 'Waiting'}...`;
         }
@@ -87,10 +89,11 @@ async function pollCall(callId) {
             recordingCard.classList.remove('hidden');
         }
 
-        if (data.recording_url) {
+        if (data.recording_url || data.recording_download_url) {
+            const downloadUrl = data.recording_download_url ? (API_BASE + data.recording_download_url) : data.recording_url;
             document.getElementById('recordingContent').innerHTML = `
                 <div class="recording">
-                    <a href="${data.recording_url}" target="_blank" download>
+                    <a href="${downloadUrl}" target="_blank" download>
                         🔗 Download Dual-Channel Recording
                     </a>
                     <div class="recording-meta">
@@ -162,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const pollInterval = setInterval(() => {
         pollCall(callId).then(data => {
-            if (data && (data.status === 'completed' || data.status === 'failed')) {
+            if (data && ['completed', 'failed', 'no_answer'].includes((data.status || '').toLowerCase())) {
                 setTimeout(() => clearInterval(pollInterval), 30000);
             }
         });
