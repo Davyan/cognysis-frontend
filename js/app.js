@@ -904,6 +904,7 @@ function getFeatureDesc(name, features) {
 /* ===== 11. LIVE CALL MONITOR ===== */
 var liveCallPollInterval = null;
 var currentLiveCallId = null;
+var terminalPollSince = null;
 
 function formatDuration(ms) {
     if (!ms || ms === 0) return '0s';
@@ -945,6 +946,8 @@ async function pollLiveCall() {
             timerEl.innerHTML = '<span class="spinner" style="display: inline-block; width: 20px; height: 20px; border: 3px solid #e5e7eb; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; vertical-align: middle;"></span> Call in progress...';
         } else if (status === 'failed') {
             timerEl.textContent = '❌ Failed: ' + (data.disconnection_reason || 'Unknown reason');
+        } else if (status === 'no_answer') {
+            timerEl.textContent = '📞 No answer or voicemail — try calling again';
         } else {
             timerEl.innerHTML = '<span class="spinner" style="display: inline-block; width: 20px; height: 20px; border: 3px solid #e5e7eb; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; vertical-align: middle;"></span> ' + (data.status || 'Waiting') + '...';
         }
@@ -983,10 +986,13 @@ async function pollLiveCall() {
             recordingCard.classList.remove('hidden');
         }
 
-        if (data.recording_url) {
+        if (data.recording_url || data.recording_download_url) {
+            // Prefer the backend proxy (api.twilio.com URLs require Twilio
+            // credentials, so linking them directly would fail in the browser)
+            var downloadUrl = data.recording_download_url ? (API + data.recording_download_url) : data.recording_url;
             document.getElementById('live-recording-content').innerHTML = 
                 '<div style="padding: 16px; background: #fef3c7; border-radius: 10px; border: 1px solid #fcd34d;">' +
-                '<a href="' + data.recording_url + '" target="_blank" download style="color: #b45309; font-weight: 600; text-decoration: none;">🔗 Download Dual-Channel Recording</a>' +
+                '<a href="' + downloadUrl + '" target="_blank" download style="color: #b45309; font-weight: 600; text-decoration: none;">🔗 Download Dual-Channel Recording</a>' +
                 '<div style="font-size: 12px; color: #92400e; margin-top: 8px;">Duration: ' + (data.recording_duration || '?') + 's | Channels: ' + (data.recording_channels || 2) + ' | Format: MP3 (Stereo)</div>' +
                 '<div style="font-size: 12px; color: #92400e; margin-top: 4px;"><strong>Channel 1</strong> = Patient audio | <strong>Channel 2</strong> = Nurse AI audio</div>' +
                 '</div>';
@@ -1027,6 +1033,7 @@ async function checkLiveRecording() {
 
 function startLiveCallPolling(callId) {
     currentLiveCallId = callId;
+    terminalPollSince = null;
     document.getElementById('live-analysis-card').classList.add('hidden');
     document.getElementById('live-recording-card').classList.add('hidden');
     document.getElementById('live-transcript').innerHTML = 
@@ -1036,12 +1043,24 @@ function startLiveCallPolling(callId) {
     navTo('live-call');
     pollLiveCall();
     if (liveCallPollInterval) clearInterval(liveCallPollInterval);
-    liveCallPollInterval = setInterval(pollLiveCall, 5000);
+    liveCallPollInterval = setInterval(async function() {
+        var data = await pollLiveCall();
+        // Stop polling 60s after a terminal state (gives the Twilio
+        // recording callback time to land and appear in the UI first).
+        if (data && data.status) {
+            var s = data.status.toLowerCase();
+            if (s === 'completed' || s === 'failed' || s === 'no_answer') {
+                if (!terminalPollSince) terminalPollSince = Date.now();
+                if (Date.now() - terminalPollSince > 60000) {
+                    clearInterval(liveCallPollInterval);
+                    liveCallPollInterval = null;
+                }
+            }
+        }
+    }, 5000);
 }
 
 /* ===== 12. RETELL OUTBOUND CALL ===== */
-
-var callPollInterval = null;
 
 async function triggerOutboundCall() {
     var phone = document.getElementById('p-phone') ? document.getElementById('p-phone').value.trim() : '';
@@ -1073,10 +1092,17 @@ async function triggerOutboundCall() {
             throw new Error(err.detail || 'Call failed');
         }
         var data = await res.json();
-        showToast('Calling ' + phone + '... Call ID: ' + data.call_id);
-        
-        // Start polling every 10 seconds for 2 minutes
-        startCallPolling(state.patient.first + ' ' + state.patient.last);
+        showToast('Calling ' + phone + '...', 'success');
+
+        // FIXED: go to the Live Call Monitor and poll /api/calls/{id}.
+        // Previously this called startCallPolling(), which polled /screenings —
+        // an endpoint Retell calls NEVER appear in — so it always timed out
+        // after 2 minutes with "Call monitoring timed out".
+        if (data.retell_call_id) {
+            startLiveCallPolling(data.retell_call_id);
+        } else {
+            showToast('Call started but no call ID returned', 'warning');
+        }
     } catch (e) {
         showToast(diagnoseFetchError(e, endpoint), 'error');
         console.error(e);
@@ -1085,39 +1111,8 @@ async function triggerOutboundCall() {
     }
 }
 
-function startCallPolling(patientName) {
-    var attempts = 0;
-    var maxAttempts = 12; // 2 minutes total
-    
-    if (callPollInterval) clearInterval(callPollInterval);
-    
-    showToast('Monitoring call... Will check for results.', 'success');
-    
-    callPollInterval = setInterval(async function() {
-        attempts++;
-        console.log('Polling for screening result... attempt ' + attempts);
-        
-        await loadHistory();
-        
-        var recentScreening = state.history.find(function(s) { 
-            return s.patient_name === patientName && s.source === 'retell'; 
-        });
-        
-        if (recentScreening) {
-            clearInterval(callPollInterval);
-            callPollInterval = null;
-            showToast('Screening result received! Loading...');
-            await loadScreening(recentScreening.id);
-            return;
-        }
-        
-        if (attempts >= maxAttempts) {
-            clearInterval(callPollInterval);
-            callPollInterval = null;
-            showToast('Call monitoring timed out. Check dashboard later.', 'warning');
-        }
-    }, 10000); // Every 10 seconds
-}
+// REMOVED: startCallPolling() polled /screenings for Retell results that
+// never appear there — this was the source of the false "monitoring timeout".
 
 // Also refresh history when navigating to dashboard
 function navTo(screenId) {
