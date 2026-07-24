@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
     <div class="app">
@@ -63,6 +64,11 @@
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     Explainability
                 </div>
+                <div class="nav-item" data-screen="report" onclick="navTo('report')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Unified Report
+                </div>
+
             </div>
             <div class="sidebar-footer">
                 <div class="user-pill">
@@ -687,6 +693,168 @@
                     <div id="live-recording-content">
                         <div style="padding: 14px; background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; border-radius: 8px;">Recording is being processed by Twilio. This may take 30-60 seconds after the call ends.</div>
                         <button class="btn btn-primary" style="margin-top: 12px;" id="live-check-recording-btn" onclick="checkLiveRecording()">Check for Recording Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCREEN 10: UNIFIED REPORT (processing + transcript + results on one tab) -->
+            <div id="report" class="screen">
+                <div class="page-header">
+                    <div><h2>Screening Report</h2><p>Processing, transcript, analysis and results — one view</p></div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="navTo('dashboard')">Dashboard</button>
+                        <button class="btn btn-primary btn-sm" onclick="navTo('screening')">+ New Screening</button>
+                    </div>
+                </div>
+
+                <!-- 1. PATIENT + SCORE HEADER -->
+                <div class="patient-card" id="ur-card" style="border-left: 4px solid var(--border);">
+                    <div class="patient-avatar-lg" id="ur-avatar">--</div>
+                    <div class="patient-details">
+                        <h3 id="ur-name">No screening loaded</h3>
+                        <div class="patient-meta" id="ur-meta"><span>Run an analysis to populate this report</span></div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 32px; font-weight: 800; color: var(--text-muted); letter-spacing: -2px;" id="ur-score">—<span style="font-size: 14px; color: #94a3b8;">/100</span></div>
+                        <div class="risk-pill risk-moderate" id="ur-pill">AWAITING DATA</div>
+                    </div>
+                </div>
+
+                <!-- 2. PROCESSING SUMMARY -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Processing Pipeline</div>
+                        <span class="badge badge-complete" id="ur-pipe-badge">Complete</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                        <div style="padding: 14px; background: var(--bg); border-radius: var(--radius-sm); text-align: center;">
+                            <div style="font-size: 20px; font-weight: 800; color: var(--accent);" id="ur-pipe-duration">—</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">1. Audio processed<br>noise reduction + resampling</div>
+                        </div>
+                        <div style="padding: 14px; background: var(--bg); border-radius: var(--radius-sm); text-align: center;">
+                            <div style="font-size: 20px; font-weight: 800; color: var(--accent);" id="ur-pipe-words">—</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">2. Speech-to-text<br>Whisper transcription</div>
+                        </div>
+                        <div style="padding: 14px; background: var(--bg); border-radius: var(--radius-sm); text-align: center;">
+                            <div style="font-size: 20px; font-weight: 800; color: var(--accent);">142 + 86</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">3. Features extracted<br>acoustic + transcript</div>
+                        </div>
+                        <div style="padding: 14px; background: var(--bg); border-radius: var(--radius-sm); text-align: center;">
+                            <div style="font-size: 20px; font-weight: 800; color: var(--accent);">XGBoost</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">4. Risk scoring<br>SHAP explainability</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. TRANSCRIPT -->
+                <div class="card" id="ur-transcript-card">
+                    <div class="card-header">
+                        <div class="card-title">Interview Transcript</div>
+                        <span class="badge badge-info">Questions adapted from MMSE screening protocol</span>
+                    </div>
+                    <div class="transcript-box" id="ur-transcript">
+                        <div style="color: var(--text-muted); font-size: 13px;">No transcript available yet.</div>
+                    </div>
+                </div>
+
+                <!-- 4. RISK SCORE -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Risk Score</div>
+                        <span class="badge badge-complete">Final</span>
+                    </div>
+                    <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;">
+                        <span style="font-size: 48px; font-weight: 800; letter-spacing: -2px;" id="ur-big-score">—</span>
+                        <span style="font-size: 20px; color: var(--text-muted); font-weight: 500;">/100</span>
+                    </div>
+                    <div class="risk-slider-labels">
+                        <span class="low">Low <span style="font-weight:400;color:#94a3b8">(0–30)</span></span>
+                        <span class="mod">Moderate <span style="font-weight:400;color:#94a3b8">(31–60)</span></span>
+                        <span class="high">High <span style="font-weight:400;color:#94a3b8">(61–100)</span></span>
+                    </div>
+                    <div class="risk-slider-container">
+                        <div class="risk-slider-seg low"></div>
+                        <div class="risk-slider-seg mod"></div>
+                        <div class="risk-slider-seg high"></div>
+                        <div class="risk-slider-marker" id="ur-marker" style="left: 0%;">0</div>
+                    </div>
+                    <p style="text-align: center; font-size: 13px; color: var(--text-muted); margin-top: 8px;">
+                        Patient falls in the <span style="font-weight: 700;" id="ur-level">—</span> band.
+                        This is a <strong>screening result — not a clinical diagnosis</strong>.
+                    </p>
+                </div>
+
+                <!-- 5. HOW THE SCORE WAS CALCULATED -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">How This Score Was Calculated</div>
+                        <span class="badge badge-info">Fully transparent — no black box</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
+                        Every driver the model used is listed below — nothing is hidden. Values are SHAP contributions:
+                        <span style="color: var(--danger); font-weight: 600;">red = pushes risk up</span>,
+                        <span style="color: var(--success); font-weight: 600;">green = pushes risk down</span>.
+                        Base risk + all contributions = final score.
+                    </div>
+                    <table class="marker-table">
+                        <thead><tr><th>Driver</th><th>What the system measured</th><th>Impact</th><th>Running score</th></tr></thead>
+                        <tbody id="ur-calc"></tbody>
+                    </table>
+                </div>
+
+                <!-- 6. ALL FEATURES — FULL BREAKDOWN (not just top 5) -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">All Measured Features</div>
+                        <span class="badge badge-info">Complete panel — like a blood test report</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+                        Every feature is shown with its measured value, the normal reference range, and a computed status — values are never abbreviated or hardcoded.
+                    </div>
+                    <table class="marker-table">
+                        <thead><tr><th>Feature</th><th>Measured</th><th>Normal range</th><th>Status</th></tr></thead>
+                        <tbody id="ur-features"></tbody>
+                    </table>
+                </div>
+
+                <!-- 7. KEY FINDINGS -->
+                <div class="card">
+                    <div class="card-header"><div class="card-title">What the System Noticed</div></div>
+                    <div id="ur-findings"></div>
+                </div>
+
+                <!-- 8. EXPLAINABILITY -->
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">From the Sound of the Voice</div><span class="badge badge-info">Acoustic</span></div>
+                        <div id="ur-exp-acoustic"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">From the Words Used</div><span class="badge badge-info">Transcript</span></div>
+                        <div id="ur-exp-transcript"></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">What Helped Lower the Risk</div><span class="badge badge-complete">Protective</span></div>
+                    <div id="ur-exp-protective"></div>
+                </div>
+
+                <!-- 9. NEXT STEPS -->
+                <div class="card">
+                    <div class="card-header"><div class="card-title">Recommended Next Steps</div><span class="badge badge-live">Clinician</span></div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div class="clickable-row">
+                            <div class="row-left"><div class="row-icon" style="background: #e0e7ff; color: #4338ca;">📋</div><div><div class="row-title">In-Person Cognitive Tests</div><div class="row-desc">MoCA, memory tests, clock drawing</div></div></div>
+                            <div class="row-arrow">→</div>
+                        </div>
+                        <div class="clickable-row">
+                            <div class="row-left"><div class="row-icon" style="background: #fce7f3; color: #be185d;">🩺</div><div><div class="row-title">Brain Scan (MRI)</div><div class="row-desc">Check for hippocampal shrinkage</div></div></div>
+                            <div class="row-arrow">→</div>
+                        </div>
+                        <div class="clickable-row">
+                            <div class="row-left"><div class="row-icon" style="background: #d1fae5; color: #065f46;">💊</div><div><div class="row-title">Review DM & BP</div><div class="row-desc">Optimize diabetes & hypertension</div></div></div>
+                            <div class="row-arrow">→</div>
+                        </div>
                     </div>
                 </div>
             </div>
