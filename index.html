@@ -136,8 +136,15 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Education (yrs)</label>
-                                    <input type="number" id="p-edu" value="8" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;">
+                                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Education Level</label>
+                                    <select id="p-edu" style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; background: white;">
+                                        <option value="9">Some High School</option>
+                                        <option value="12" selected>High School Diploma</option>
+                                        <option value="14">Associate Degree</option>
+                                        <option value="16">Bachelor's Degree</option>
+                                        <option value="18">Master's Degree</option>
+                                        <option value="22">Doctorate (PhD / MD)</option>
+                                    </select>
                                 </div>
                             </div>
                             <div>
@@ -178,6 +185,18 @@
                             <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5; padding: 8px 10px; border-left: 3px solid var(--accent); background: #eef2ff; border-radius: 4px;">
                                 Recorded as acknowledged predispositions — these do <strong>not</strong> alter the current score.
                                 Planned: condition-aware feature weighting (e.g. hearing impairment down-weights loudness and repetition markers).
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Core Memory</div><span class="badge badge-info">Recall check</span></div>
+                        <div>
+                            <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">A personal fact the patient should know</label>
+                            <textarea id="p-memory" rows="3" placeholder="e.g. I grew up in Spanish Town. My mother was Miss Joyce, a seamstress, and every Sunday we went to the market together."
+                                style="width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; resize: vertical;"></textarea>
+                            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5; margin-top: 6px;">
+                                During the call, the nurse naturally asks the patient about this memory. After the call,
+                                recall is scored against the transcript and shown on the Unified Report — an MMSE-style memory check.
                             </div>
                         </div>
                     </div>
@@ -715,6 +734,7 @@
                         <div style="color: var(--text-muted); font-size: 13px;">No transcript available yet.</div>
                     </div>
                     <div id="ur-markers"></div>
+                    <div id="ur-memory"></div>
                     <audio id="review-audio" style="display:none;"></audio>
                 </div>
 
