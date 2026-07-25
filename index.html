@@ -281,11 +281,10 @@
     <div class="page-header">
         <div>
             <h2>Audio Capture</h2>
-            <p id="audio-capture-subtitle">Record, call, or upload patient audio</p>
+            <p id="audio-capture-subtitle">Call the patient or upload an audio file — results appear in the Unified Report</p>
         </div>
         <div class="header-actions">
             <button class="btn btn-secondary btn-sm" onclick="navTo('screening')">← Back</button>
-            <button class="btn btn-primary btn-sm" onclick="navTo('report')">Process →</button>
         </div>
     </div>
 
@@ -299,34 +298,6 @@
             </div>
         </div>
         <div class="risk-pill risk-moderate" id="audio-status-badge">Ready</div>
-    </div>
-
-    <!-- REAL WAVEFORM -->
-    <div class="waveform-container" style="margin-bottom: 16px;">
-        <div class="waveform-header">
-            <h3 id="waveform-label">🔴 LIVE</h3>
-            <div class="timer" id="waveform-timer">00:00</div>
-        </div>
-        <canvas id="waveformCanvas" width="900" height="120" style="width: 100%; height: 120px; display: block;"></canvas>
-        <div class="waveform-legend">
-            <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--success)"></div>Speech</div>
-            <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--warning)"></div>Pause</div>
-            <div class="waveform-legend-item"><div class="waveform-legend-dot" style="background:var(--danger)"></div>Hesitation</div>
-        </div>
-    </div>
-
-    <!-- TRANSCRIPT — BELOW WAVEFORM -->
-    <div class="card" id="transcript-card" style="display: none; margin-bottom: 16px;">
-        <div class="card-header">
-            <div class="card-title">Transcript</div>
-            <span class="badge badge-live" id="transcript-badge">Live</span>
-        </div>
-        <div class="transcript-box" id="audio-capture-transcript">
-            <div class="transcript-line">
-                <div class="transcript-speaker">AI INTERVIEWER</div>
-                <div class="transcript-text">Can you tell me about what you did yesterday?</div>
-            </div>
-        </div>
     </div>
 
     <!-- CALL / UPLOAD OPTIONS -->
