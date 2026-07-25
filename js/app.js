@@ -111,7 +111,7 @@ function populateAudioCapture() {
         document.getElementById('cap-avatar').textContent = initials;
         document.getElementById('cap-meta').innerHTML =
             '<span>' + p.age + ' yrs</span><span>•</span><span>' + p.sex +
-            '</span><span>•</span><span>' + p.edu + ' yrs education</span>';
+            '</span><span>•</span><span>' + (eduLabel(p.edu) || '—') + '</span>';
     }
 
     // ─── Status badge reflects where we are in the flow ───
@@ -173,12 +173,16 @@ async function beginScreening() {
         cond_speech_impediment: !!(document.getElementById('h-speech') && document.getElementById('h-speech').checked)
     };
 
+    // Core memory — the nurse asks the patient to recall this during the call.
+    var memory = document.getElementById('p-memory') ? document.getElementById('p-memory').value.trim() : '';
+
     var fullUrl = API + '/patients?first_name=' + encodeURIComponent(first) + '&last_name=' + encodeURIComponent(last) + '&age=' + age + '&sex=' + encodeURIComponent(sex) + '&education=' + edu + '&language=' + encodeURIComponent(lang)
         + '&cond_diabetes=' + conds.cond_diabetes
         + '&cond_hypertension=' + conds.cond_hypertension
         + '&cond_stroke=' + conds.cond_stroke
         + '&cond_hearing_impairment=' + conds.cond_hearing_impairment
-        + '&cond_speech_impediment=' + conds.cond_speech_impediment;
+        + '&cond_speech_impediment=' + conds.cond_speech_impediment
+        + '&core_memory=' + encodeURIComponent(memory);
 
     setSpinner(true, 'Creating patient record...');
     try {
@@ -188,7 +192,7 @@ async function beginScreening() {
             throw new Error('HTTP ' + res.status + ': ' + errText);
         }
         var data = await res.json();
-        state.patient = { id: data.id, first: first, last: last, age: age, sex: sex, edu: edu, lang: lang, conditions: conds };
+        state.patient = { id: data.id, first: first, last: last, age: age, sex: sex, edu: edu, lang: lang, conditions: conds, memory: memory };
 
         document.getElementById('cap-name').textContent = first + ' ' + last;
         document.getElementById('cap-avatar').textContent = (first[0] + last[0]).toUpperCase();
@@ -853,7 +857,7 @@ async function pollLiveCall() {
                 '<div style="padding: 16px; background: #fef3c7; border-radius: 10px; border: 1px solid #fcd34d;">' +
                 '<a href="' + downloadUrl + '" target="_blank" download style="color: #b45309; font-weight: 600; text-decoration: none;">🔗 Download Dual-Channel Recording</a>' +
                 '<div style="font-size: 12px; color: #92400e; margin-top: 8px;">Duration: ' + (data.recording_duration || '?') + 's | Channels: ' + (data.recording_channels || 2) + ' | Format: MP3 (Stereo)</div>' +
-                '<div style="font-size: 12px; color: #92400e; margin-top: 4px;"><strong>Channel 1</strong> = Patient audio | <strong>Channel 2</strong> = Nurse AI audio</div>' +
+                '<div style="font-size: 12px; color: #92400e; margin-top: 4px;">Dual-channel stereo — the patient channel is <strong>auto-detected</strong> (the nurse AI identifies itself by script) before analysis</div>' +
                 '</div>';
         }
 
@@ -1030,6 +1034,7 @@ async function triggerOutboundCall() {
             body: JSON.stringify({
                 patient_phone: phone,
                 patient_name: state.patient.first + ' ' + state.patient.last,
+                core_memory: state.patient.memory || '',
                 agent_id: RETELL_AGENT_ID,
                 from_number: RETELL_FROM_NUMBER
             })
@@ -1146,6 +1151,18 @@ var INTERVIEW_QUESTIONS = [
     { q: 'Can you tell me about what you did yesterday?', basis: 'MMSE recall & episodic memory items' }
 ];
 
+// Map stored education years to the categorical label shown in the form.
+function eduLabel(edu) {
+    edu = parseInt(edu) || 0;
+    if (edu >= 22) return 'Doctorate (PhD/MD)';
+    if (edu >= 18) return "Master's Degree";
+    if (edu >= 16) return "Bachelor's Degree";
+    if (edu >= 14) return 'Associate Degree';
+    if (edu >= 12) return 'High School Diploma';
+    if (edu > 0)   return 'Some High School';
+    return null;
+}
+
 function urStatusChip(status) {
     if (status === 'flagged') return '<span class="chip chip-danger">Flagged</span>';
     if (status === 'watch')   return '<span class="chip chip-warn">Watch</span>';
@@ -1170,7 +1187,8 @@ function populateUnifiedReport(data) {
         var meta = [];
         if (p.age) meta.push(p.age + ' yrs');
         if (p.sex) meta.push(p.sex);
-        if (p.edu) meta.push(p.edu + ' yrs education');
+        var eduTxt = eduLabel(p.edu);
+        if (eduTxt) meta.push(eduTxt);
         // Acknowledged predispositions (recorded, not scored — future weighting)
         var condNames = { cond_diabetes: 'Diabetes', cond_hypertension: 'Hypertension', cond_stroke: 'Stroke/TIA', cond_hearing_impairment: 'Hearing impairment', cond_speech_impediment: 'Speech impediment' };
         var activeConds = [];
@@ -1260,6 +1278,27 @@ function populateUnifiedReport(data) {
             }
         } else {
             markerBox.innerHTML = '';
+        }
+    }
+
+    /* ── 3c. Core-memory recall result (call-based screenings) ── */
+    var memBox = document.getElementById('ur-memory');
+    if (memBox) {
+        var mc = data.memory_check;
+        if (mc) {
+            var pct = Math.round((mc.recall_ratio || 0) * 100);
+            var ok = mc.recalled;
+            memBox.innerHTML =
+                '<div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);border-left:3px solid ' +
+                (ok ? 'var(--success)' : 'var(--danger)') + ';">' +
+                '<div style="font-size:12px;font-weight:700;color:' + (ok ? 'var(--success)' : 'var(--danger)') + ';">' +
+                '🧠 Core Memory: ' + (ok ? 'RECALLED' : 'NOT RECALLED') + ' — ' + pct + '% of key details matched</div>' +
+                '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Recorded memory: "' + mc.core_memory + '"</div>' +
+                '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Matched: ' +
+                (mc.matched_keywords.length ? mc.matched_keywords.join(', ') : 'none') +
+                ' of ' + mc.keywords.join(', ') + '</div></div>';
+        } else {
+            memBox.innerHTML = '';
         }
     }
 
@@ -1408,7 +1447,9 @@ function populateUnifiedReport(data) {
     featHtml += slideRow('🗣️', 'Voice Quality', 'Medium',
         'Jitter ' + jitterPct.toFixed(2) + '% · Shimmer ' + (a.shimmer || 0).toFixed(2) + '%',
         'Jitter < 1.04%',
-        urStatusChip(slideStat(jitterPct, function(v){return v < 1.04;}, function(v){return v < 1.56;})));
+        // Chip boundaries aligned with the panel severity ramp
+        // (0% below 1.04, 100% at 5.0 — frame-level instrument calibration)
+        urStatusChip(slideStat(jitterPct, function(v){return v < 1.04;}, function(v){return v < 5.0;})));
     featHtml += slideRow('⚡', 'Speech Rate', 'Medium',
         (l.speech_rate_wpm || 0).toFixed(0) + ' wpm',
         '120–150 wpm',
@@ -1496,7 +1537,7 @@ function populateUnifiedReport(data) {
     if (p.edu > 0) {
         var divE = document.createElement('div');
         divE.style.cssText = 'padding:14px;background:#d1fae5;border-radius:var(--radius-sm);border-left:3px solid var(--success);margin-bottom:10px;';
-        divE.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:4px;">📖 ' + p.edu + ' Years of Education</div><div style="font-size:12px;color:#065f46;line-height:1.6;">Education provides cognitive reserve — extra brain capacity that helps compensate for early decline.</div>';
+        divE.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:4px;">📖 ' + eduLabel(p.edu) + '</div><div style="font-size:12px;color:#065f46;line-height:1.6;">Education provides cognitive reserve — extra brain capacity that helps compensate for early decline.</div>';
         expP.appendChild(divE);
     }
     shap.filter(function(item) { return item.impact < 0; }).forEach(function(item) {
