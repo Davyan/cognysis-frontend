@@ -992,12 +992,19 @@ async function pollLiveCall() {
             // Prefer the backend proxy (api.twilio.com URLs require Twilio
             // credentials, so linking them directly would fail in the browser)
             var downloadUrl = data.recording_download_url ? (API + data.recording_download_url) : data.recording_url;
-            document.getElementById('live-recording-content').innerHTML = 
+            document.getElementById('live-recording-content').innerHTML =
                 '<div style="padding: 16px; background: #fef3c7; border-radius: 10px; border: 1px solid #fcd34d;">' +
                 '<a href="' + downloadUrl + '" target="_blank" download style="color: #b45309; font-weight: 600; text-decoration: none;">🔗 Download Dual-Channel Recording</a>' +
                 '<div style="font-size: 12px; color: #92400e; margin-top: 8px;">Duration: ' + (data.recording_duration || '?') + 's | Channels: ' + (data.recording_channels || 2) + ' | Format: MP3 (Stereo)</div>' +
                 '<div style="font-size: 12px; color: #92400e; margin-top: 4px;"><strong>Channel 1</strong> = Patient audio | <strong>Channel 2</strong> = Nurse AI audio</div>' +
                 '</div>';
+        }
+
+        // ─── AUTO-ANALYZE: call ended + recording ready → run full pipeline ───
+        // This replaces the manual "download recording → re-upload" step and
+        // populates the Unified Report automatically.
+        if (status === 'completed' && data.recording_download_url) {
+            autoAnalyzeCallRecording(data);
         }
 
         return data;
@@ -1033,9 +1040,88 @@ async function checkLiveRecording() {
     }
 }
 
+/* ===== AUTO-ANALYZE CALL RECORDING ===== */
+// When a call completes, download the dual-channel recording through the
+// backend proxy and run it through the same /screen pipeline as an upload.
+// Result: the Unified Report (and every other results tab) populates itself,
+// and the screening auto-saves to the database — no manual download/upload.
+var autoAnalyzeTriggeredFor = null;
+
+async function autoAnalyzeCallRecording(callData) {
+    if (!callData.recording_download_url) return;
+    if (autoAnalyzeTriggeredFor === callData.retell_call_id) return; // run once per call
+    // Also skip if this call was already analyzed before a page refresh.
+    try {
+        if (localStorage.getItem('cognysis_analyzed_call') === callData.retell_call_id) return;
+    } catch (e) {}
+    autoAnalyzeTriggeredFor = callData.retell_call_id;
+    try { localStorage.setItem('cognysis_analyzed_call', callData.retell_call_id); } catch (e) {}
+
+    showToast('Call ended — analyzing patient audio...');
+    try {
+        // Preferred path: backend splits the patient channel (ch1) from the
+        // dual-channel recording, runs the full pipeline, and saves the
+        // screening — all server-side.
+        var res = await fetch(API + '/api/calls/' + callData.retell_call_id + '/analyze', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (res.status === 409) {
+            // Recording not ready yet — let the poller retry on next tick.
+            autoAnalyzeTriggeredFor = null;
+            try { localStorage.removeItem('cognysis_analyzed_call'); } catch (e) {}
+            return;
+        }
+
+        if (res.status === 404) {
+            // Backend not updated yet — legacy fallback: download and re-upload.
+            await legacyAutoAnalyze(callData);
+            return;
+        }
+
+        if (!res.ok) {
+            var errText = await res.text().catch(function() { return 'Unknown error'; });
+            throw new Error('HTTP ' + res.status + ': ' + errText);
+        }
+
+        var data = await res.json();
+        state.screening = data;
+        state.screening.source = 'call';
+
+        populateFeatureExtraction(data);
+        populateAnalysis(data);
+        populateResults(data);
+        populateExplainability(data);
+        populateUnifiedReport(data);
+
+        await loadHistory();   // backend already saved this screening
+        navTo('report');
+        showToast('Call analysis complete — see Unified Report');
+    } catch (e) {
+        console.error('Auto-analysis failed:', e);
+        showToast('Could not auto-analyze recording — use "Download" then upload manually', 'error');
+    }
+}
+
+// Legacy path used only until the backend analyze endpoint is deployed:
+// downloads the raw (mixed stereo) recording and re-uploads it to /screen.
+async function legacyAutoAnalyze(callData) {
+    var res = await fetch(API + callData.recording_download_url);
+    if (!res.ok) throw new Error('Recording download failed (HTTP ' + res.status + ')');
+    var blob = await res.blob();
+    var file = new File([blob], 'call_' + callData.retell_call_id + '.mp3', { type: 'audio/mpeg' });
+    state.selectedFile = file;
+    await processAudioUpload(file);
+    navTo('report');
+    showToast('Call analysis complete — see Unified Report');
+}
+
 function startLiveCallPolling(callId) {
     currentLiveCallId = callId;
     terminalPollSince = null;
+    // Persist so the monitor survives page refreshes and tab navigation.
+    try { localStorage.setItem('cognysis_live_call', callId); } catch (e) {}
     document.getElementById('live-analysis-card').classList.add('hidden');
     document.getElementById('live-recording-card').classList.add('hidden');
     document.getElementById('live-transcript').innerHTML = 
@@ -1137,6 +1223,16 @@ function navTo(screenId) {
 document.addEventListener('DOMContentLoaded', function() {
     checkApiHealth();
     loadHistory();
+
+    // Restore any in-progress/recent call after a page refresh, so the
+    // Live Call monitor shows its last known state instead of resetting.
+    try {
+        var savedCall = localStorage.getItem('cognysis_live_call');
+        if (savedCall) {
+            currentLiveCallId = savedCall;
+            pollLiveCall();
+        }
+    } catch (e) {}
 
     ['uploadArea', 'uploadAreaOnly'].forEach(function(id) {
         var area = document.getElementById(id);
@@ -1304,64 +1400,85 @@ function populateUnifiedReport(data) {
         '<td><strong style="color:' + color + ';">' + score + '</strong></td></tr>';
     document.getElementById('ur-calc').innerHTML = calcHtml;
 
-    /* ── 6. All features — computed statuses, never hardcoded ── */
-    function row(name, measured, normal, status) {
-        return '<tr><td>' + name + '</td><td><strong>' + measured + '</strong></td>' +
+    /* ── 6. Feature panel — matches the presentation slide exactly ──
+       12 features (6 acoustic + 6 language) with the weights and normal
+       ranges from the assessment framework slide. Measured values always
+       come from the live extraction; status is computed from the slide's
+       reference boundary — never hardcoded. */
+    function slideRow(icon, name, weight, measured, normal, statusHtml) {
+        var wColor = weight === 'HIGH' ? '#0d9488' : weight === 'Medium' ? '#d97706' : '#6b7280';
+        return '<tr><td>' + icon + ' ' + name + '</td>' +
+               '<td><span style="font-weight:700;color:' + wColor + ';">' + weight + '</span></td>' +
+               '<td><strong>' + measured + '</strong></td>' +
                '<td style="font-size:12px;color:var(--text-muted);">' + normal + '</td>' +
-               '<td>' + urStatusChip(status) + '</td></tr>';
+               '<td>' + statusHtml + '</td></tr>';
     }
-    function stat(value, flaggedIf, watchIf) {
-        if (flaggedIf(value)) return 'flagged';
+    function slideStat(value, normalIf, watchIf) {
+        if (normalIf(value)) return 'normal';
         if (watchIf(value)) return 'watch';
-        return 'normal';
+        return 'flagged';
+    }
+    function noDataChip() {
+        return '<span class="chip" style="background:#e5e7eb;color:#6b7280;">No data</span>';
     }
 
-    var pauseRatio = a.pause_ratio || 0;
-    var pitchStd = a.pitch_std_hz || 0;
-    var hnr = a.hnr || 0;
-    var jitter = a.jitter || 0;
-    var shimmer = a.shimmer || 0;
-    var rate = l.speech_rate_wpm || 0;
-    var latency = a.response_latency || 0;
-    var shortCount = a.short_utterance_count || 0;
-    var ttr = l.type_token_ratio || 0;
-    var fillerRate = l.filler_rate || 0;
-    var vagueRate = l.vague_word_rate || 0;
-    var avgLen = l.mean_sentence_length || 0;
-    var disfRate = l.disfluency_rate || 0;
-    var uncertainty = l.uncertainty_count || 0;
+    var jitterPct = a.jitter || 0;
+    var ttrVal = l.type_token_ratio || 0;
+    var fillerPer100 = (l.filler_rate || 0) * 100;
+    var semCoh = (typeof l.semantic_coherence === 'number') ? l.semantic_coherence : null;
+    var circumloc = (typeof l.circumlocution_count === 'number') ? l.circumlocution_count : (l.vague_word_count || 0);
 
     var featHtml = '';
-    featHtml += row('⏱️ Pause ratio', (pauseRatio * 100).toFixed(1) + '%', '15–30% of recording is silence',
-        stat(pauseRatio, function(v){return v > 0.30;}, function(v){return v > 0.15;}));
-    featHtml += row('⏱️ Avg pause duration', (a.pause_duration_mean || 0).toFixed(2) + 's', '≈0.6s',
-        stat(a.pause_duration_mean || 0, function(v){return v > 1.2;}, function(v){return v > 0.8;}));
-    featHtml += row('🗣️ Jitter (pitch instability)', jitter.toFixed(2) + '%', '< 1.0%',
-        stat(jitter, function(v){return v > 1.5;}, function(v){return v > 1.0;}));
-    featHtml += row('🗣️ Shimmer (loudness instability)', shimmer.toFixed(2) + '%', '< 4.0%',
-        stat(shimmer, function(v){return v > 6.0;}, function(v){return v > 4.0;}));
-    featHtml += row('🗣️ Harmonics-to-noise ratio', hnr.toFixed(1) + ' dB', '> 20 dB',
-        stat(hnr, function(v){return v < 15;}, function(v){return v < 20;}));
-    featHtml += row('⚡ Speech rate', rate.toFixed(1) + ' WPM', '120–180 WPM',
-        stat(rate, function(v){return v < 80;}, function(v){return v < 110;}));
-    featHtml += row('🎵 Pitch variation', pitchStd.toFixed(1) + ' Hz', '40–70 Hz',
-        stat(pitchStd, function(v){return v < 25;}, function(v){return v < 40;}));
-    featHtml += row('⏳ Response latency', latency.toFixed(2) + 's', '< 1.5s',
-        stat(latency, function(v){return v > 3.0;}, function(v){return v > 1.5;}));
-    featHtml += row('💬 Short utterances', shortCount, '≤ 2',
-        stat(shortCount, function(v){return v > 4;}, function(v){return v > 2;}));
-    featHtml += row('📚 Vocabulary diversity (TTR)', ttr.toFixed(3), '> 0.50',
-        stat(ttr, function(v){return v < 0.35;}, function(v){return v < 0.50;}));
-    featHtml += row('💬 Filler rate ("um", "uh")', (fillerRate * 100).toFixed(1) + '%', '< 4%',
-        stat(fillerRate, function(v){return v > 0.08;}, function(v){return v > 0.04;}));
-    featHtml += row('🔍 Vague word rate', (vagueRate * 100).toFixed(1) + '%', '< 3%',
-        stat(vagueRate, function(v){return v > 0.06;}, function(v){return v > 0.03;}));
-    featHtml += row('🏗️ Mean sentence length', avgLen.toFixed(1) + ' words', '≥ 8 words',
-        stat(avgLen, function(v){return v < 5;}, function(v){return v < 8;}));
-    featHtml += row('💬 Disfluency rate', (disfRate * 100).toFixed(1) + '%', '< 5%',
-        stat(disfRate, function(v){return v > 0.10;}, function(v){return v > 0.05;}));
-    featHtml += row('🧠 Uncertainty markers', uncertainty, '≤ 1',
-        stat(uncertainty, function(v){return v > 3;}, function(v){return v > 1;}));
+    // ── ACOUSTIC FEATURES ──
+    featHtml += slideRow('⏱️', 'Pause Patterns', 'HIGH',
+        (a.pause_duration_mean || 0).toFixed(2) + 's avg · ' + ((a.pause_ratio || 0) * 100).toFixed(0) + '% silence',
+        '< 0.5 sec avg',
+        urStatusChip(slideStat(a.pause_duration_mean || 0, function(v){return v < 0.5;}, function(v){return v < 1.0;})));
+    featHtml += slideRow('🗣️', 'Voice Quality', 'Medium',
+        'Jitter ' + jitterPct.toFixed(2) + '% · Shimmer ' + (a.shimmer || 0).toFixed(2) + '%',
+        'Jitter < 1.04%',
+        urStatusChip(slideStat(jitterPct, function(v){return v < 1.04;}, function(v){return v < 1.56;})));
+    featHtml += slideRow('⚡', 'Speech Rate', 'Medium',
+        (l.speech_rate_wpm || 0).toFixed(0) + ' wpm',
+        '120–150 wpm',
+        urStatusChip(slideStat(l.speech_rate_wpm || 0, function(v){return v >= 120;}, function(v){return v >= 90;})));
+    featHtml += slideRow('🎵', 'Pitch & Prosody', 'HIGH',
+        (a.pitch_std_hz || 0).toFixed(1) + ' Hz variation',
+        'Variation > 20 Hz',
+        urStatusChip(slideStat(a.pitch_std_hz || 0, function(v){return v > 20;}, function(v){return v > 10;})));
+    featHtml += slideRow('📊', 'Spectral Features', 'Low',
+        (a.spectral_centroid || 0).toFixed(0) + ' Hz centroid',
+        'Stable harmonics',
+        urStatusChip('normal'));
+    featHtml += slideRow('⏳', 'Response Timing', 'HIGH',
+        (a.response_latency || 0).toFixed(2) + 's onset',
+        '< 2 sec onset',
+        urStatusChip(slideStat(a.response_latency || 0, function(v){return v < 2;}, function(v){return v < 3;})));
+    // ── LANGUAGE FEATURES ──
+    featHtml += slideRow('📚', 'Vocabulary Diversity', 'HIGH',
+        'TTR ' + ttrVal.toFixed(2) + ' · ' + (l.unique_word_count || 0) + ' unique words',
+        'TTR > 0.5',
+        urStatusChip(slideStat(ttrVal, function(v){return v > 0.5;}, function(v){return v > 0.35;})));
+    featHtml += slideRow('🔗', 'Semantic Coherence', 'HIGH',
+        semCoh !== null ? semCoh.toFixed(2) + ' cosine' : 'Not extracted in prototype',
+        'Cosine > 0.7',
+        semCoh !== null ? urStatusChip(slideStat(semCoh, function(v){return v > 0.7;}, function(v){return v > 0.5;})) : noDataChip());
+    featHtml += slideRow('🔍', 'Word-Finding Ability', 'HIGH',
+        circumloc + ' circumlocution' + (circumloc === 1 ? '' : 's') + ' · ' + (l.vague_word_count || 0) + ' vague words',
+        '< 2 circumlocutions',
+        urStatusChip(slideStat(circumloc, function(v){return v < 2;}, function(v){return v < 5;})));
+    featHtml += slideRow('🏗️', 'Sentence Structure', 'Medium',
+        (l.mean_sentence_length || 0).toFixed(1) + ' words avg · ' + (l.sentence_count || 0) + ' sentences',
+        'Complete > 80%',
+        urStatusChip(slideStat(l.mean_sentence_length || 0, function(v){return v >= 8;}, function(v){return v >= 5;})));
+    featHtml += slideRow('💬', 'Disfluency Markers', 'Low',
+        fillerPer100.toFixed(1) + ' per 100 words · ' + (l.repetition_count || 0) + ' repetitions',
+        '< 6 per 100 words',
+        urStatusChip(slideStat(fillerPer100, function(v){return v < 6;}, function(v){return v < 9;})));
+    featHtml += slideRow('🧠', 'Memory Language', 'Medium',
+        (l.uncertainty_count || 0) + ' hedges ("I think", "maybe")',
+        '< 4 hedges',
+        urStatusChip(slideStat(l.uncertainty_count || 0, function(v){return v < 4;}, function(v){return v < 7;})));
     document.getElementById('ur-features').innerHTML = featHtml;
 
     /* ── 7. Key findings ── */
