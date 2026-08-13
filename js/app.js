@@ -736,7 +736,13 @@ async function loadScreening(id) {
 
 /* ===== 10. FEATURE HELPERS ===== */
 function getFeatureIcon(name) {
-    var map = { 'speech_rate_wpm': '⚡', 'pause_ratio': '⏱️', 'pitch_std_hz': '🎵', 'short_utterance_count': '💬', 'duration_seconds': '⏳' };
+    var map = {
+        'pause_duration_mean': '⏸️', 'jitter': '🎤', 'pitch_std_hz': '🎵',
+        'spectral_centroid': '📡', 'response_latency': '⏱️', 'speech_rate_wpm': '⚡',
+        'type_token_ratio': '📚', 'vague_word_count': '🔎', 'mean_sentence_length': '📝',
+        'filler_rate': '💬', 'uncertainty_count': '🧠',
+        'pause_ratio': '⏱️', 'short_utterance_count': '💬', 'duration_seconds': '⏳'
+    };
     return map[name] || '📊';
 }
 function formatFeatureName(name) {
@@ -1169,6 +1175,79 @@ function urStatusChip(status) {
     return '<span class="chip chip-success">Normal</span>';
 }
 
+/* ── What Was Analysed (call-based screenings only) ──
+   Renders the response-window breakdown: which parts of the call were scored
+   (patient answers to nurse questions), the exact analysed audio, and the
+   full two-way conversation for context. Hidden for file uploads. */
+function populateResponseAnalysis(data) {
+    var card = document.getElementById('ur-analysis-card');
+    if (!card) return;
+    var ra = data.response_analysis || (data.features && data.features.response_analysis);
+    if (!ra || !ra.summary) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    var s = ra.summary;
+
+    function esc(t) {
+        return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function trunc(t, n) { t = esc(t); return t.length > n ? t.slice(0, n) + '…' : t; }
+    function chip(label, value) {
+        return '<div style="padding:10px;background:var(--bg);border-radius:var(--radius-sm);text-align:center;">' +
+            '<div style="font-size:18px;font-weight:800;color:var(--accent);">' + value + '</div>' +
+            '<div style="font-size:11px;color:var(--text-muted);margin-top:3px;">' + label + '</div></div>';
+    }
+
+    document.getElementById('ur-ra-summary').innerHTML =
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">' +
+        chip('Responses analysed', s.analysed_windows + ' / ' + s.total_windows) +
+        chip('Speech analysed', s.analysed_seconds + 's') +
+        chip('% of patient channel', s.analysed_pct + '%') +
+        chip('Avg response latency', (s.mean_response_latency_s != null ? s.mean_response_latency_s.toFixed(2) + 's' : '—')) +
+        '</div>' +
+        (ra.analysis_note ? '<div style="font-size:12px;color:var(--text-muted);margin-top:8px;">' + esc(ra.analysis_note) + '</div>' : '');
+
+    var audioBox = document.getElementById('ur-ra-audio');
+    if (ra.response_audio_url) {
+        audioBox.innerHTML =
+            '<div style="font-size:12px;font-weight:700;margin-bottom:4px;">🔊 Analysed audio — the exact ' +
+            (ra.responses_audio_seconds || s.analysed_seconds) + 's of patient speech the model scored</div>' +
+            '<audio controls style="width:100%;" src="' + API + ra.response_audio_url + '"></audio>';
+    } else {
+        audioBox.innerHTML = '';
+    }
+
+    var rows = (ra.windows || []).map(function(w) {
+        var status = w.analysed
+            ? '<span style="color:var(--success);font-weight:700;">✓ analysed</span>'
+            : '<span style="color:var(--text-muted);">skipped — ' + esc(w.skip_reason || '') + '</span>';
+        return '<tr style="border-top:1px solid var(--border);">' +
+            '<td style="padding:6px;">' + w.index + '</td>' +
+            '<td style="padding:6px;font-size:12px;">' + (trunc(w.nurse_text, 70) || '—') + '</td>' +
+            '<td style="padding:6px;font-size:12px;">' + (trunc(w.patient_text, 70) || '<span style="color:var(--text-muted);">—</span>') + '</td>' +
+            '<td style="padding:6px;">' + (w.response_latency_s != null ? w.response_latency_s.toFixed(2) + 's' : '—') + '</td>' +
+            '<td style="padding:6px;">' + status + '</td></tr>';
+    }).join('');
+    document.getElementById('ur-ra-table').innerHTML =
+        '<table style="width:100%;border-collapse:collapse;margin-top:6px;">' +
+        '<thead><tr style="text-align:left;font-size:11px;color:var(--text-muted);text-transform:uppercase;">' +
+        '<th style="padding:6px;">#</th><th style="padding:6px;">Nurse asked</th>' +
+        '<th style="padding:6px;">Patient answered</th><th style="padding:6px;">Latency</th>' +
+        '<th style="padding:6px;">Scored?</th></tr></thead><tbody>' + rows + '</tbody></table>';
+
+    var conv = (ra.conversation || []).map(function(t) {
+        var nurse = t.speaker !== 'Patient';
+        return '<div style="margin:4px 0;font-size:12px;">' +
+            '<span style="font-weight:700;color:' + (nurse ? 'var(--accent)' : 'var(--text)') + ';">' +
+            esc(t.speaker) + ':</span> ' + esc(t.text) + '</div>';
+    }).join('');
+    document.getElementById('ur-ra-conversation').innerHTML =
+        '<details style="margin-top:12px;"><summary style="cursor:pointer;font-size:12px;font-weight:700;">' +
+        'Full conversation transcript (nurse + patient) — shown for context, not scored</summary>' +
+        '<div style="margin-top:8px;max-height:260px;overflow-y:auto;padding:10px;background:var(--bg);border-radius:var(--radius-sm);">' +
+        (conv || '<span style="color:var(--text-muted);font-size:12px;">No conversation available.</span>') +
+        '</div></details>';
+}
+
 function populateUnifiedReport(data) {
     var pred = data.prediction;
     var features = data.features;
@@ -1302,6 +1381,9 @@ function populateUnifiedReport(data) {
         }
     }
 
+    /* ── 3b. What was analysed (calls only — hidden for uploads) ── */
+    populateResponseAnalysis(data);
+
     /* ── 4. Risk score ── */
     document.getElementById('ur-big-score').textContent = score;
     document.getElementById('ur-big-score').style.color = color;
@@ -1356,9 +1438,8 @@ function populateUnifiedReport(data) {
         shap.forEach(function(item) {
             running += item.impact;
             var up = item.impact > 0;
-            var note = item.neutralized ? ' <span style="font-size:10px;color:var(--text-muted);">(neutralized — metadata only)</span>' : '';
             calcHtml += '<tr>' +
-                '<td>' + getFeatureIcon(item.feature) + ' ' + formatFeatureName(item.feature) + note + '</td>' +
+                '<td>' + getFeatureIcon(item.feature) + ' ' + formatFeatureName(item.feature) + '</td>' +
                 '<td style="font-size:12px;color:var(--text-muted);">' + getFeatureDesc(item.feature, features) + '</td>' +
                 '<td style="font-weight:700;color:' + (up ? 'var(--danger)' : 'var(--success)') + ';">' +
                     (up ? '↑ +' : '↓ −') + Math.abs(item.impact).toFixed(3) + '</td>' +
