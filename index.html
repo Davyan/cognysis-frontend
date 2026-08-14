@@ -777,36 +777,25 @@
                     </p>
                 </div>
 
-                <!-- 5. HOW THE SCORE WAS CALCULATED -->
+                <!-- 5. UNIFIED SCORE BREAKDOWN — waterfall + feature panel merged -->
                 <div class="card">
                     <div class="card-header">
                         <div class="card-title">How This Score Was Calculated</div>
-                        <span class="badge badge-info">Fully transparent — no black box</span>
+                        <span class="badge badge-info">One table — every feature, both halves, verifiable arithmetic</span>
                     </div>
-                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
-                        Every driver the model used is listed below — nothing is hidden. Values are SHAP contributions:
-                        <span style="color: var(--danger); font-weight: 600;">red = pushes risk up</span>,
-                        <span style="color: var(--success); font-weight: 600;">green = pushes risk down</span>.
-                        Base risk + all contributions = final score.
-                    </div>
+                    <div id="ur-calc-summary" style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;"></div>
                     <table class="marker-table">
-                        <thead><tr><th>Driver</th><th>What the system measured</th><th>Impact</th><th>Running score</th></tr></thead>
+                        <thead><tr>
+                            <th>Feature</th>
+                            <th>Weight</th>
+                            <th>Measured · normal range</th>
+                            <th>Status</th>
+                            <th>ML model ×½</th>
+                            <th>Panel ×½</th>
+                            <th>Effect on score</th>
+                            <th>Running total</th>
+                        </tr></thead>
                         <tbody id="ur-calc"></tbody>
-                    </table>
-                </div>
-
-                <!-- 6. FEATURE PANEL — matches the presentation slide (6 acoustic + 6 language) -->
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">Screening Feature Panel</div>
-                        <span class="badge badge-info">Weights & ranges per assessment framework</span>
-                    </div>
-                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
-                        Every feature in the assessment framework is shown with its weight, measured value, and normal reference range — status is computed live, never hardcoded. Full panel shown, like a blood test report.
-                    </div>
-                    <table class="marker-table">
-                        <thead><tr><th>Feature</th><th>Weight</th><th>Measured</th><th>Normal Range</th><th>Status</th></tr></thead>
-                        <tbody id="ur-features"></tbody>
                     </table>
                 </div>
 
