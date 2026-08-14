@@ -1395,11 +1395,13 @@ function populateUnifiedReport(data) {
     levelEl.textContent = level.charAt(0).toUpperCase() + level.slice(1) + ' Risk';
     levelEl.style.color = color;
 
-    /* ── 5. How the score was calculated ──
-       Hybrid scoring: final = 50% ML model + 50% weighted clinical panel.
-       Both halves are decomposed line-by-line so every judge can verify
-       the arithmetic on screen. Falls back to the single ML waterfall if
-       the backend hasn't been updated with panel scoring yet. */
+    /* ── 5+6. UNIFIED SCORE BREAKDOWN ──
+       One table: every slide feature appears exactly once, showing BOTH
+       halves of the hybrid score. Each row's "effect" is already halved
+       (½·ML impact + ½·panel contribution), so base + all rows = final
+       score exactly — assessors can verify the arithmetic on screen.
+       Identical for calls and uploads (same /screen data shape); falls
+       back to a plain ML waterfall for legacy results without a panel. */
     var shap = (pred.shap_breakdown || []).slice().sort(function(x, y) {
         return Math.abs(y.impact) - Math.abs(x.impact);
     });
@@ -1407,172 +1409,151 @@ function populateUnifiedReport(data) {
     var hasPanel = typeof pred.panel_score === 'number' && Array.isArray(pred.panel_breakdown);
     var mlScore = (typeof pred.ml_score === 'number') ? pred.ml_score : pred.risk_score;
     var base = (typeof pred.base_score === 'number') ? pred.base_score : (mlScore - totalImpact);
+
+    /* v2 model feature -> panel row key (the 11 measurable slide features) */
+    var FEATURE_TO_PANEL = {
+        'pause_duration_mean': 'pause_patterns',
+        'jitter': 'voice_quality',
+        'pitch_std_hz': 'pitch_prosody',
+        'spectral_centroid': 'spectral',
+        'response_latency': 'response_timing',
+        'speech_rate_wpm': 'speech_rate',
+        'type_token_ratio': 'vocabulary_diversity',
+        'vague_word_count': 'word_finding',
+        'mean_sentence_length': 'sentence_structure',
+        'filler_rate': 'disfluency',
+        'uncertainty_count': 'memory_language'
+    };
+
+    var summaryEl = document.getElementById('ur-calc-summary');
+    if (summaryEl) {
+        summaryEl.innerHTML = hasPanel
+            ? 'Final score <strong>' + score + '</strong> = ½ × ML model (<strong>' + Math.round(mlScore * 100) + '</strong>) + ' +
+              '½ × clinical panel (<strong>' + Math.round(pred.panel_score * 100) + '</strong>). Both halves are shown per feature below — ' +
+              'each effect is already halved, so <strong>base + all rows = the final score exactly</strong>. ' +
+              '<span style="color:var(--danger);font-weight:600;">Red = pushes risk up</span>, ' +
+              '<span style="color:var(--success);font-weight:600;">green = protective</span>. Rows sorted by size of effect.'
+            : 'Values are SHAP contributions: base risk + all contributions = final score. ' +
+              '<span style="color:var(--danger);font-weight:600;">Red = pushes risk up</span>, ' +
+              '<span style="color:var(--success);font-weight:600;">green = pushes risk down</span>.';
+    }
+
+    /* signed probability-points cell (values are already in 0–1; shown as points) */
+    function ptsHtml(v) {
+        var c = Math.abs(v) < 0.0005 ? 'var(--text-muted)'
+              : (v > 0 ? 'var(--danger)' : 'var(--success)');
+        var arrow = Math.abs(v) < 0.0005 ? '' : (v > 0 ? '↑ +' : '↓ −');
+        return '<span style="font-weight:700;color:' + c + ';">' + arrow + (Math.abs(v) * 100).toFixed(1) + '</span>';
+    }
+    function dash() { return '<span style="color:var(--text-muted);">—</span>'; }
+    function weightCell(label) {
+        var c = label === 'HIGH' ? '#0d9488' : label === 'Medium' ? '#d97706' : '#6b7280';
+        return '<span style="font-weight:700;color:' + c + ';">' + label + '</span>';
+    }
+    function sevToStatus(sev) { return sev >= 0.6 ? 'flagged' : sev >= 0.25 ? 'watch' : 'normal'; }
+
     var calcHtml = '';
+    var running = 0;
 
     if (hasPanel) {
-        /* ── Blended summary ── */
+        /* Base row — the model average, halved (its share of the final score) */
+        running += base * 0.5;
         calcHtml += '<tr style="background:var(--bg);">' +
-            '<td><strong>① ML model score</strong></td>' +
-            '<td>XGBoost on 5 core speech markers, SHAP-verified below</td>' +
-            '<td style="font-weight:700;">× 50%</td>' +
-            '<td><strong>' + Math.round(mlScore * 100) + '</strong></td></tr>';
-        calcHtml += '<tr style="background:var(--bg);">' +
-            '<td><strong>② Clinical panel score</strong></td>' +
-            '<td>12-feature assessment framework (weights & normal ranges), decomposed below</td>' +
-            '<td style="font-weight:700;">× 50%</td>' +
-            '<td><strong>' + Math.round(pred.panel_score * 100) + '</strong></td></tr>';
-        calcHtml += '<tr style="background:#eef2ff;border-top:2px solid var(--accent);border-bottom:2px solid var(--accent);">' +
-            '<td><strong>Final blended score</strong></td>' +
-            '<td>(' + Math.round(mlScore * 100) + ' + ' + Math.round(pred.panel_score * 100) + ') ÷ 2 — matches the headline number</td>' +
-            '<td>=</td>' +
-            '<td><strong style="color:' + color + ';">' + score + '</strong></td></tr>';
+            '<td><strong>Model base</strong></td><td>' + dash() + '</td>' +
+            '<td style="font-size:12px;color:var(--text-muted);">Population average before this patient\'s features</td>' +
+            '<td>' + dash() + '</td><td>' + ptsHtml(base * 0.5) + '</td><td>' + dash() + '</td>' +
+            '<td>' + ptsHtml(base * 0.5) + '</td><td>' + Math.round(running * 100) + '</td></tr>';
 
-        /* ── ML half: SHAP waterfall ── */
-        calcHtml += '<tr><td colspan="4" style="background:#f8fafc;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">① ML model drivers — base + contributions = ML score</td></tr>';
-        calcHtml += '<tr>' +
-            '<td>Base risk</td>' +
-            '<td style="font-size:12px;color:var(--text-muted);">Model average before this patient\'s features</td>' +
-            '<td>—</td>' +
-            '<td>' + Math.round(base * 100) + '</td></tr>';
-        var running = base;
+        /* Map ML impacts onto their panel rows */
+        var impactByPanel = {};
+        var unmatched = [];
         shap.forEach(function(item) {
-            running += item.impact;
-            var up = item.impact > 0;
-            calcHtml += '<tr>' +
-                '<td>' + getFeatureIcon(item.feature) + ' ' + formatFeatureName(item.feature) + '</td>' +
-                '<td style="font-size:12px;color:var(--text-muted);">' + getFeatureDesc(item.feature, features) + '</td>' +
-                '<td style="font-weight:700;color:' + (up ? 'var(--danger)' : 'var(--success)') + ';">' +
-                    (up ? '↑ +' : '↓ −') + Math.abs(item.impact).toFixed(3) + '</td>' +
-                '<td>' + Math.round(running * 100) + '</td></tr>';
+            var key = FEATURE_TO_PANEL[item.feature];
+            if (key) impactByPanel[key] = item;
+            else unmatched.push(item);
         });
 
-        /* ── Panel half: weighted contributions ── */
-        calcHtml += '<tr><td colspan="4" style="background:#f8fafc;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">② Clinical panel contributions — sum = panel score</td></tr>';
-        pred.panel_breakdown.forEach(function(row) {
+        /* One row per slide feature — biggest combined effect first, "no data" last */
+        var panelRows = pred.panel_breakdown.slice().sort(function(r1, r2) {
+            if (!r1.available) return 1;
+            if (!r2.available) return -1;
+            var e1 = Math.abs((impactByPanel[r1.feature] ? impactByPanel[r1.feature].impact : 0) * 0.5 + (r1.contribution || 0) * 0.5);
+            var e2 = Math.abs((impactByPanel[r2.feature] ? impactByPanel[r2.feature].impact : 0) * 0.5 + (r2.contribution || 0) * 0.5);
+            return e2 - e1;
+        });
+
+        panelRows.forEach(function(row) {
+            var wColor = row.weight_label === 'HIGH' ? '#0d9488' : row.weight_label === 'Medium' ? '#d97706' : '#6b7280';
             if (!row.available) {
                 calcHtml += '<tr style="opacity:0.55;">' +
                     '<td>' + row.name + '</td>' +
+                    '<td><span style="font-weight:700;color:' + wColor + ';">' + row.weight_label + '</span></td>' +
                     '<td style="font-size:12px;color:var(--text-muted);">' + row.measured + ' — excluded from scoring (no fabricated values)</td>' +
-                    '<td>—</td><td>—</td></tr>';
+                    '<td><span class="chip" style="background:#e5e7eb;color:#6b7280;">No data</span></td>' +
+                    '<td>' + dash() + '</td><td>' + dash() + '</td><td>' + dash() + '</td><td>' + dash() + '</td></tr>';
                 return;
             }
-            var sev = row.severity || 0;
-            var pts = (row.contribution || 0) * 100;
-            var sevColor = sev >= 0.6 ? 'var(--danger)' : sev >= 0.25 ? 'var(--warning)' : 'var(--success)';
+            var mlItem = impactByPanel[row.feature];
+            var mlHalf = mlItem ? mlItem.impact * 0.5 : 0;
+            var panelHalf = (row.contribution || 0) * 0.5;
+            var effect = mlHalf + panelHalf;
+            running += effect;
             calcHtml += '<tr>' +
-                '<td>' + row.name + ' <span style="font-size:10px;color:var(--text-muted);">(' + row.weight_label + ')</span></td>' +
-                '<td style="font-size:12px;color:var(--text-muted);">' + row.measured + ' · normal: ' + row.normal_range + '</td>' +
-                '<td style="font-weight:700;color:' + sevColor + ';">' + Math.round(sev * 100) + '% severity</td>' +
-                '<td>+' + pts.toFixed(1) + ' pts</td></tr>';
+                '<td><strong>' + row.name + '</strong></td>' +
+                '<td><span style="font-weight:700;color:' + wColor + ';">' + row.weight_label + '</span></td>' +
+                '<td style="font-size:12px;"><strong>' + row.measured + '</strong> <span style="color:var(--text-muted);">· normal: ' + row.normal_range + '</span></td>' +
+                '<td>' + urStatusChip(sevToStatus(row.severity || 0)) + '</td>' +
+                '<td>' + (mlItem ? ptsHtml(mlHalf) : dash()) + '</td>' +
+                '<td>' + ptsHtml(panelHalf) + '</td>' +
+                '<td>' + ptsHtml(effect) + '</td>' +
+                '<td><strong>' + Math.round(running * 100) + '</strong></td></tr>';
         });
+
+        /* ML features with no panel row (legacy v1 screenings) still get shown */
+        unmatched.forEach(function(item) {
+            var half = item.impact * 0.5;
+            running += half;
+            calcHtml += '<tr>' +
+                '<td>' + getFeatureIcon(item.feature) + ' ' + formatFeatureName(item.feature) +
+                    ' <span style="font-size:10px;color:var(--text-muted);">(model only)</span></td>' +
+                '<td>' + dash() + '</td>' +
+                '<td style="font-size:12px;color:var(--text-muted);">' + getFeatureDesc(item.feature, features) + '</td>' +
+                '<td>' + dash() + '</td><td>' + ptsHtml(half) + '</td><td>' + dash() + '</td>' +
+                '<td>' + ptsHtml(half) + '</td><td><strong>' + Math.round(running * 100) + '</strong></td></tr>';
+        });
+
+        /* Final reconciliation row — running total must equal the headline score */
+        calcHtml += '<tr style="background:#eef2ff;border-top:2px solid var(--accent);">' +
+            '<td><strong>Final blended score</strong></td><td>' + dash() + '</td>' +
+            '<td style="font-size:12px;">(' + Math.round(mlScore * 100) + ' + ' + Math.round(pred.panel_score * 100) +
+                ') ÷ 2 — equals base + all effects above</td>' +
+            '<td>' + dash() + '</td><td>' + dash() + '</td><td>' + dash() + '</td>' +
+            '<td><strong>=</strong></td>' +
+            '<td><strong style="color:' + color + ';">' + score + '</strong></td></tr>';
     } else {
-        /* ── Legacy single waterfall (backend without panel scoring) ── */
+        /* ── Legacy single waterfall (results saved before panel scoring) ── */
+        running = base;
         calcHtml += '<tr style="background:var(--bg);">' +
-            '<td><strong>Base risk</strong></td>' +
-            '<td>Model average before this patient\'s features</td>' +
-            '<td>—</td>' +
+            '<td><strong>Model base</strong></td><td>' + dash() + '</td>' +
+            '<td style="font-size:12px;color:var(--text-muted);">Model average before this patient\'s features</td>' +
+            '<td>' + dash() + '</td><td>' + dash() + '</td><td>' + dash() + '</td><td>' + dash() + '</td>' +
             '<td><strong>' + Math.round(base * 100) + '</strong></td></tr>';
-        var running2 = base;
         shap.forEach(function(item) {
-            running2 += item.impact;
-            var up = item.impact > 0;
+            running += item.impact;
             calcHtml += '<tr>' +
                 '<td>' + getFeatureIcon(item.feature) + ' ' + formatFeatureName(item.feature) + '</td>' +
+                '<td>' + dash() + '</td>' +
                 '<td style="font-size:12px;color:var(--text-muted);">' + getFeatureDesc(item.feature, features) + '</td>' +
-                '<td style="font-weight:700;color:' + (up ? 'var(--danger)' : 'var(--success)') + ';">' +
-                    (up ? '↑ +' : '↓ −') + Math.abs(item.impact).toFixed(3) + '</td>' +
-                '<td>' + Math.round(running2 * 100) + '</td></tr>';
+                '<td>' + dash() + '</td><td>' + ptsHtml(item.impact) + '</td><td>' + dash() + '</td>' +
+                '<td>' + ptsHtml(item.impact) + '</td><td><strong>' + Math.round(running * 100) + '</strong></td></tr>';
         });
-        calcHtml += '<tr style="background:var(--bg);border-top:2px solid var(--border);">' +
-            '<td><strong>Final score</strong></td>' +
-            '<td>Base + all contributions (matches the score above)</td>' +
-            '<td>—</td>' +
+        calcHtml += '<tr style="background:#eef2ff;border-top:2px solid var(--accent);">' +
+            '<td><strong>Final score</strong></td><td>' + dash() + '</td>' +
+            '<td style="font-size:12px;">Base + all contributions (matches the score above)</td>' +
+            '<td>' + dash() + '</td><td>' + dash() + '</td><td>' + dash() + '</td><td><strong>=</strong></td>' +
             '<td><strong style="color:' + color + ';">' + score + '</strong></td></tr>';
     }
     document.getElementById('ur-calc').innerHTML = calcHtml;
-
-    /* ── 6. Feature panel — matches the presentation slide exactly ──
-       12 features (6 acoustic + 6 language) with the weights and normal
-       ranges from the assessment framework slide. Measured values always
-       come from the live extraction; status is computed from the slide's
-       reference boundary — never hardcoded. */
-    function slideRow(icon, name, weight, measured, normal, statusHtml) {
-        var wColor = weight === 'HIGH' ? '#0d9488' : weight === 'Medium' ? '#d97706' : '#6b7280';
-        return '<tr><td>' + icon + ' ' + name + '</td>' +
-               '<td><span style="font-weight:700;color:' + wColor + ';">' + weight + '</span></td>' +
-               '<td><strong>' + measured + '</strong></td>' +
-               '<td style="font-size:12px;color:var(--text-muted);">' + normal + '</td>' +
-               '<td>' + statusHtml + '</td></tr>';
-    }
-    function slideStat(value, normalIf, watchIf) {
-        if (normalIf(value)) return 'normal';
-        if (watchIf(value)) return 'watch';
-        return 'flagged';
-    }
-    function noDataChip() {
-        return '<span class="chip" style="background:#e5e7eb;color:#6b7280;">No data</span>';
-    }
-
-    var jitterPct = a.jitter || 0;
-    var ttrVal = l.type_token_ratio || 0;
-    var fillerPer100 = (l.filler_rate || 0) * 100;
-    var semCoh = (typeof l.semantic_coherence === 'number') ? l.semantic_coherence : null;
-    var circumloc = (typeof l.circumlocution_count === 'number') ? l.circumlocution_count : (l.vague_word_count || 0);
-
-    var featHtml = '';
-    // ── ACOUSTIC FEATURES ──
-    featHtml += slideRow('⏱️', 'Pause Patterns', 'HIGH',
-        (a.pause_duration_mean || 0).toFixed(2) + 's avg · ' + ((a.pause_ratio || 0) * 100).toFixed(0) + '% silence',
-        '< 0.5 sec avg',
-        urStatusChip(slideStat(a.pause_duration_mean || 0, function(v){return v < 0.5;}, function(v){return v < 1.0;})));
-    featHtml += slideRow('🗣️', 'Voice Quality', 'Medium',
-        'Jitter ' + jitterPct.toFixed(2) + '% · Shimmer ' + (a.shimmer || 0).toFixed(2) + '%',
-        'Jitter < 1.04%',
-        // Chip boundaries aligned with the panel severity ramp
-        // (0% below 1.04, 100% at 5.0 — frame-level instrument calibration)
-        urStatusChip(slideStat(jitterPct, function(v){return v < 1.04;}, function(v){return v < 5.0;})));
-    featHtml += slideRow('⚡', 'Speech Rate', 'Medium',
-        (l.speech_rate_wpm || 0).toFixed(0) + ' wpm',
-        '120–150 wpm',
-        urStatusChip(slideStat(l.speech_rate_wpm || 0, function(v){return v >= 120;}, function(v){return v >= 90;})));
-    featHtml += slideRow('🎵', 'Pitch & Prosody', 'HIGH',
-        (a.pitch_std_hz || 0).toFixed(1) + ' Hz variation',
-        'Variation > 20 Hz',
-        urStatusChip(slideStat(a.pitch_std_hz || 0, function(v){return v > 20;}, function(v){return v > 10;})));
-    featHtml += slideRow('📊', 'Spectral Features', 'Low',
-        (a.spectral_centroid || 0).toFixed(0) + ' Hz centroid',
-        'Stable harmonics',
-        urStatusChip('normal'));
-    featHtml += slideRow('⏳', 'Response Timing', 'HIGH',
-        (a.response_latency || 0).toFixed(2) + 's onset',
-        '< 2 sec onset',
-        urStatusChip(slideStat(a.response_latency || 0, function(v){return v < 2;}, function(v){return v < 3;})));
-    // ── LANGUAGE FEATURES ──
-    featHtml += slideRow('📚', 'Vocabulary Diversity', 'HIGH',
-        'TTR ' + ttrVal.toFixed(2) + ' · ' + (l.unique_word_count || 0) + ' unique words',
-        'TTR > 0.5',
-        urStatusChip(slideStat(ttrVal, function(v){return v > 0.5;}, function(v){return v > 0.35;})));
-    featHtml += slideRow('🔗', 'Semantic Coherence', 'HIGH',
-        semCoh !== null ? semCoh.toFixed(2) + ' cosine' : 'Not extracted in prototype',
-        'Cosine > 0.7',
-        semCoh !== null ? urStatusChip(slideStat(semCoh, function(v){return v > 0.7;}, function(v){return v > 0.5;})) : noDataChip());
-    featHtml += slideRow('🔍', 'Word-Finding Ability', 'HIGH',
-        circumloc + ' circumlocution' + (circumloc === 1 ? '' : 's') + ' · ' + (l.vague_word_count || 0) + ' vague words',
-        '< 2 circumlocutions',
-        urStatusChip(slideStat(circumloc, function(v){return v < 2;}, function(v){return v < 5;})));
-    featHtml += slideRow('🏗️', 'Sentence Structure', 'Medium',
-        (l.mean_sentence_length || 0).toFixed(1) + ' words avg · ' + (l.sentence_count || 0) + ' sentences',
-        'Complete > 80%',
-        urStatusChip(slideStat(l.mean_sentence_length || 0, function(v){return v >= 8;}, function(v){return v >= 5;})));
-    featHtml += slideRow('💬', 'Disfluency Markers', 'Low',
-        fillerPer100.toFixed(1) + ' per 100 words · ' + (l.repetition_count || 0) + ' repetitions',
-        '< 6 per 100 words',
-        urStatusChip(slideStat(fillerPer100, function(v){return v < 6;}, function(v){return v < 9;})));
-    featHtml += slideRow('🧠', 'Memory Language', 'Medium',
-        (l.uncertainty_count || 0) + ' hedges ("I think", "maybe")',
-        '< 4 hedges',
-        urStatusChip(slideStat(l.uncertainty_count || 0, function(v){return v < 4;}, function(v){return v < 7;})));
-    document.getElementById('ur-features').innerHTML = featHtml;
 
     /* ── 7. Key findings ── */
     var findings = document.getElementById('ur-findings');
