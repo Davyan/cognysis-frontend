@@ -1609,4 +1609,50 @@ function populateUnifiedReport(data) {
         expP.appendChild(divP);
     });
     if (!expP.hasChildNodes()) expP.innerHTML = '<div style="padding:14px;color:var(--text-muted);font-size:13px;">No protective factors identified.</div>';
+
+    /* ── 9. Recommended next steps — risk-tiered (NORMAL / MODERATE / HIGH) ── */
+    var NEXT_STEPS = {
+        low: {
+            badge: 'Routine', tier: 'NORMAL range (MMSE 24–30 equivalent)',
+            iconBg: '#d1fae5', iconColor: '#065f46',
+            rows: [
+                { icon: '📅', title: 'Rescreen in 24 Months', desc: 'Baseline established. Monitor for changes over time.', action: 'Schedule' },
+                { icon: '🏃', title: 'Maintain Active Lifestyle', desc: 'Exercise, social engagement, cognitive activities.', action: 'Guide' },
+                { icon: '💡', title: 'Know the Warning Signs', desc: 'Share guide with family: what to watch for.', action: 'Send' }
+            ]
+        },
+        moderate: {
+            badge: 'Follow-up', tier: 'MODERATE range (MMSE 18–23 equivalent)',
+            iconBg: '#fef3c7', iconColor: '#92400e',
+            rows: [
+                { icon: '👨‍⚕️', title: 'Clinician Review Within 14 Days', desc: 'Full audio + SHAP review. Assess context.', action: 'Review' },
+                { icon: '🔄', title: 'Rescreen in 6 Weeks', desc: 'Same patient, different questions. Confirm pattern.', action: 'Schedule' },
+                { icon: '🧪', title: 'Rule Out Confounders', desc: 'Depression screen. Hearing test. Medication review.', action: 'Order' }
+            ]
+        },
+        high: {
+            badge: 'Urgent', tier: 'HIGH range (MMSE 0–17 equivalent)',
+            iconBg: '#fee2e2', iconColor: '#991b1b',
+            rows: [
+                { icon: '🚨', title: 'Urgent Clinician Review Within 48 Hours', desc: 'Full case review. Family contacted.', action: 'Review' },
+                { icon: '🧠', title: 'In-Person Cognitive Assessment', desc: 'MoCA, memory tests, functional evaluation.', action: 'Refer' },
+                { icon: '🔬', title: 'Brain Scan (MRI)', desc: 'Check for hippocampal shrinkage, vascular changes.', action: 'Order' }
+            ]
+        }
+    };
+    var ns = NEXT_STEPS[level] || NEXT_STEPS.moderate;
+    var nsBadge = document.getElementById('ur-next-badge');
+    if (nsBadge) nsBadge.textContent = ns.badge;
+    var nsBox = document.getElementById('ur-next-steps');
+    if (nsBox) {
+        var nsHtml = '<div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">' + ns.tier + '</div>';
+        ns.rows.forEach(function(r) {
+            nsHtml += '<div class="clickable-row">' +
+                '<div class="row-left"><div class="row-icon" style="background:' + ns.iconBg + ';color:' + ns.iconColor + ';">' + r.icon + '</div>' +
+                '<div><div class="row-title">' + r.title + '</div><div class="row-desc">' + r.desc + '</div></div></div>' +
+                '<button class="btn btn-secondary btn-sm" type="button">' + r.action + '</button>' +
+                '</div>';
+        });
+        nsBox.innerHTML = nsHtml;
+    }
 }
