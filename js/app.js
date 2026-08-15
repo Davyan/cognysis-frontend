@@ -746,7 +746,30 @@ function getFeatureIcon(name) {
     return map[name] || '📊';
 }
 function formatFeatureName(name) {
-    var map = { 'speech_rate_wpm': 'Speech Rate', 'pause_ratio': 'Pause Ratio', 'pitch_std_hz': 'Pitch Variation', 'short_utterance_count': 'Short Utterances', 'duration_seconds': 'Duration' };
+    /* Slide names — understandable to assessors (no raw "type_token_ratio") */
+    var map = {
+        'pause_duration_mean': 'Pause Patterns',
+        'jitter': 'Voice Quality (Jitter)',
+        'pitch_std_hz': 'Pitch & Prosody',
+        'spectral_centroid': 'Spectral Features',
+        'response_latency': 'Response Timing',
+        'speech_rate_wpm': 'Speech Rate',
+        'type_token_ratio': 'Vocabulary Diversity',
+        'vague_word_count': 'Word-Finding Ability',
+        'mean_sentence_length': 'Sentence Structure',
+        'filler_rate': 'Disfluency Markers',
+        'uncertainty_count': 'Memory & Language',
+        /* legacy v1 names */
+        'pause_ratio': 'Pause Ratio',
+        'short_utterance_count': 'Short Utterances',
+        'duration_seconds': 'Recording Length',
+        'shimmer': 'Voice Stability (Shimmer)',
+        'hnr': 'Voice Clarity (HNR)',
+        'spectral_rolloff': 'Spectral Rolloff',
+        'articulation_rate': 'Articulation Rate',
+        'phonemes_per_second': 'Speech Sound Rate',
+        'zero_crossing_rate': 'Signal Noisiness'
+    };
     return map[name] || name;
 }
 function getFeatureDesc(name, features) {
@@ -765,9 +788,15 @@ function getFeatureDesc(name, features) {
         'response_latency': 'Response latency of ' + (a.response_latency || 0).toFixed(2) + ' seconds before first speech. Longer delays suggest slower processing speed.',
         'articulation_rate': 'Articulation rate of ' + (a.articulation_rate || 0).toFixed(1) + ' syllables/sec. Slower articulation indicates effortful speech production.',
         'phonemes_per_second': 'Phonemes per second: ' + (a.phonemes_per_second || 0).toFixed(1) + '. Fewer sounds per second suggests simplified or slowed articulation.',
-        'zero_crossing_rate': 'Zero-crossing rate of ' + (a.zero_crossing_rate || 0).toFixed(4) + ' indicates signal noisiness. Higher values can suggest breathiness or frication.'
+        'zero_crossing_rate': 'Zero-crossing rate of ' + (a.zero_crossing_rate || 0).toFixed(4) + ' indicates signal noisiness. Higher values can suggest breathiness or frication.',
+        'pause_duration_mean': 'Pauses averaged ' + (a.pause_duration_mean || 0).toFixed(2) + 's each. Healthy pauses are brief — longer pauses suggest word-retrieval difficulty.',
+        'type_token_ratio': 'Vocabulary diversity: ' + Math.round((l.type_token_ratio || 0) * 100) + '% of words were unique (' + (l.unique_word_count || 0) + ' unique of ' + (l.word_count || 0) + ' total). Heavy repetition lowers this.',
+        'vague_word_count': 'The patient used ' + (l.vague_word_count || 0) + ' vague words ("thing", "stuff", "something") — fillers for a word that couldn\'t be retrieved.',
+        'mean_sentence_length': 'Sentences averaged ' + (l.mean_sentence_length || 0).toFixed(1) + ' words. Very short or rambling sentences reflect simplified language production.',
+        'filler_rate': (l.filler_rate || 0).toFixed(1) + ' fillers per 100 words ("um", "uh"). Fillers mark hesitation while searching for words.',
+        'uncertainty_count': (l.uncertainty_count || 0) + ' uncertainty phrases ("I think", "maybe", "I\'m not sure"). More hedging signals unsure recall.'
     };
-    return descs[name] || 'Significant contribution to risk score.';
+    return descs[name] || 'Contributed to the risk score.';
 }
 
 /* ===== 11. LIVE CALL MONITOR ===== */
@@ -821,8 +850,9 @@ async function pollLiveCall() {
             timerEl.innerHTML = '<span class="spinner" style="display: inline-block; width: 20px; height: 20px; border: 3px solid #e5e7eb; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; vertical-align: middle;"></span> ' + (data.status || 'Waiting') + '...';
         }
 
+        // Live Analysis card stays hidden (demo request) — fields still
+        // populated below so re-enabling it is a one-line change in index.html.
         if (data.status === 'completed' || data.status === 'ongoing' || (data.transcript_object && data.transcript_object.length > 0)) {
-            document.getElementById('live-analysis-card').classList.remove('hidden');
             document.getElementById('live-patient-words').textContent = data.patient_word_count || 0;
             document.getElementById('live-agent-words').textContent = data.agent_word_count || 0;
             document.getElementById('live-orientation').textContent = (data.orientation_score || 0) + '/100';
@@ -848,6 +878,8 @@ async function pollLiveCall() {
                     '<div style="font-size: 15px; line-height: 1.5;">' + (turn.content || '') + '</div>' +
                     '</div>';
             }).join('');
+            // Keep the newest turn in view while the call is running.
+            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
         }
 
         var recordingCard = document.getElementById('live-recording-card');
@@ -1182,6 +1214,11 @@ function urStatusChip(status) {
 function populateResponseAnalysis(data) {
     var card = document.getElementById('ur-analysis-card');
     if (!card) return;
+    // Hidden per demo request — the response-window analysis still runs
+    // server-side (and shapes the score); the card stays off the report.
+    card.style.display = 'none';
+    return;
+    /* eslint-disable no-unreachable */
     var ra = data.response_analysis || (data.features && data.features.response_analysis);
     if (!ra || !ra.summary) { card.style.display = 'none'; return; }
     card.style.display = '';
@@ -1425,14 +1462,43 @@ function populateUnifiedReport(data) {
         'uncertainty_count': 'memory_language'
     };
 
+    /* Slide features split by source — voice (acoustic) vs words (transcript) */
+    var PANEL_GROUP = {
+        'pause_patterns': 'voice', 'voice_quality': 'voice', 'pitch_prosody': 'voice',
+        'spectral': 'voice', 'response_timing': 'voice', 'speech_rate': 'voice',
+        'vocabulary_diversity': 'words', 'semantic_coherence': 'words',
+        'word_finding': 'words', 'sentence_structure': 'words',
+        'disfluency': 'words', 'memory_language': 'words'
+    };
+    var GROUP_LABELS = {
+        'voice': '🎤 From the Voice — how the patient sounded',
+        'words': '📝 From the Words — what the patient said'
+    };
+    /* Plain-language explanation per feature (why it matters), shown under
+       the measured value. Replaces the old "Significant contribution…" text. */
+    var FEATURE_NOTES = {
+        'pause_patterns': 'Long, frequent pauses suggest the brain is searching for words.',
+        'voice_quality': 'Jitter and shimmer measure vocal-cord stability — rougher, shakier voices score higher.',
+        'pitch_prosody': 'A flat, monotone voice can indicate reduced motor control of speech.',
+        'spectral': 'Where vocal energy is concentrated — shifts reflect vocal-tract changes.',
+        'response_timing': 'Long delays before answering suggest slower processing speed.',
+        'speech_rate': 'Slower speech indicates the brain needs more time to retrieve words.',
+        'vocabulary_diversity': 'The share of words that are unique — heavy repetition signals shrinking vocabulary access.',
+        'word_finding': '"Thing", "stuff" and similar fill the gap when the exact word can\'t be retrieved.',
+        'sentence_structure': 'Very short or rambling sentences reflect simplified language production.',
+        'disfluency': '"Um", "uh" and restarts mark hesitation while searching for words.',
+        'memory_language': '"I think", "maybe", "I\'m not sure" signal uncertainty about recall.',
+        'semantic_coherence': 'Needs sentence-embedding models — not extracted in this prototype.'
+    };
+
     var summaryEl = document.getElementById('ur-calc-summary');
     if (summaryEl) {
         summaryEl.innerHTML = hasPanel
             ? 'Final score <strong>' + score + '</strong> = ½ × ML model (<strong>' + Math.round(mlScore * 100) + '</strong>) + ' +
-              '½ × clinical panel (<strong>' + Math.round(pred.panel_score * 100) + '</strong>). Both halves are shown per feature below — ' +
-              'each effect is already halved, so <strong>base + all rows = the final score exactly</strong>. ' +
+              '½ × clinical panel (<strong>' + Math.round(pred.panel_score * 100) + '</strong>). Each row\'s <strong>Effect on score</strong> ' +
+              'already combines both halves, so <strong>base + all rows = the final score exactly</strong>. ' +
               '<span style="color:var(--danger);font-weight:600;">Red = pushes risk up</span>, ' +
-              '<span style="color:var(--success);font-weight:600;">green = protective</span>. Rows sorted by size of effect.'
+              '<span style="color:var(--success);font-weight:600;">green = protective</span>. Biggest effects first within each group.'
             : 'Values are SHAP contributions: base risk + all contributions = final score. ' +
               '<span style="color:var(--danger);font-weight:600;">Red = pushes risk up</span>, ' +
               '<span style="color:var(--success);font-weight:600;">green = pushes risk down</span>.';
@@ -1455,14 +1521,26 @@ function populateUnifiedReport(data) {
     var calcHtml = '';
     var running = 0;
 
+    /* Shared row builders (6-column table: Feature | Weight | Measured ·
+       normal range | Status | Effect on score | Running total) */
+    function groupHeader(g) {
+        return '<tr><td colspan="6" style="background:#f1f5f9;font-size:11px;font-weight:800;' +
+            'text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);padding-top:10px;">' +
+            GROUP_LABELS[g] + '</td></tr>';
+    }
+    function wColorOf(label) {
+        return label === 'HIGH' ? '#0d9488' : label === 'Medium' ? '#d97706' : '#6b7280';
+    }
+
     if (hasPanel) {
         /* Base row — the model average, halved (its share of the final score) */
         running += base * 0.5;
         calcHtml += '<tr style="background:var(--bg);">' +
             '<td><strong>Model base</strong></td><td>' + dash() + '</td>' +
             '<td style="font-size:12px;color:var(--text-muted);">Population average before this patient\'s features</td>' +
-            '<td>' + dash() + '</td><td>' + ptsHtml(base * 0.5) + '</td><td>' + dash() + '</td>' +
-            '<td>' + ptsHtml(base * 0.5) + '</td><td>' + Math.round(running * 100) + '</td></tr>';
+            '<td>' + dash() + '</td>' +
+            '<td>' + ptsHtml(base * 0.5) + '</td>' +
+            '<td>' + Math.round(running * 100) + '</td></tr>';
 
         /* Map ML impacts onto their panel rows */
         var impactByPanel = {};
@@ -1473,40 +1551,46 @@ function populateUnifiedReport(data) {
             else unmatched.push(item);
         });
 
-        /* One row per slide feature — biggest combined effect first, "no data" last */
-        var panelRows = pred.panel_breakdown.slice().sort(function(r1, r2) {
-            if (!r1.available) return 1;
-            if (!r2.available) return -1;
-            var e1 = Math.abs((impactByPanel[r1.feature] ? impactByPanel[r1.feature].impact : 0) * 0.5 + (r1.contribution || 0) * 0.5);
-            var e2 = Math.abs((impactByPanel[r2.feature] ? impactByPanel[r2.feature].impact : 0) * 0.5 + (r2.contribution || 0) * 0.5);
-            return e2 - e1;
-        });
-
-        panelRows.forEach(function(row) {
-            var wColor = row.weight_label === 'HIGH' ? '#0d9488' : row.weight_label === 'Medium' ? '#d97706' : '#6b7280';
+        function rowEffect(row) {
+            var ml = impactByPanel[row.feature];
+            return (ml ? ml.impact * 0.5 : 0) + (row.contribution || 0) * 0.5;
+        }
+        function panelRowHtml(row) {
+            var wColor = wColorOf(row.weight_label);
             if (!row.available) {
-                calcHtml += '<tr style="opacity:0.55;">' +
+                return '<tr style="opacity:0.55;">' +
                     '<td>' + row.name + '</td>' +
                     '<td><span style="font-weight:700;color:' + wColor + ';">' + row.weight_label + '</span></td>' +
                     '<td style="font-size:12px;color:var(--text-muted);">' + row.measured + ' — excluded from scoring (no fabricated values)</td>' +
                     '<td><span class="chip" style="background:#e5e7eb;color:#6b7280;">No data</span></td>' +
-                    '<td>' + dash() + '</td><td>' + dash() + '</td><td>' + dash() + '</td><td>' + dash() + '</td></tr>';
-                return;
+                    '<td>' + dash() + '</td><td>' + dash() + '</td></tr>';
             }
-            var mlItem = impactByPanel[row.feature];
-            var mlHalf = mlItem ? mlItem.impact * 0.5 : 0;
-            var panelHalf = (row.contribution || 0) * 0.5;
-            var effect = mlHalf + panelHalf;
+            var effect = rowEffect(row);
             running += effect;
-            calcHtml += '<tr>' +
+            var note = FEATURE_NOTES[row.feature] || '';
+            return '<tr>' +
                 '<td><strong>' + row.name + '</strong></td>' +
                 '<td><span style="font-weight:700;color:' + wColor + ';">' + row.weight_label + '</span></td>' +
-                '<td style="font-size:12px;"><strong>' + row.measured + '</strong> <span style="color:var(--text-muted);">· normal: ' + row.normal_range + '</span></td>' +
+                '<td style="font-size:12px;"><strong>' + row.measured + '</strong> <span style="color:var(--text-muted);">· normal: ' + row.normal_range + '</span>' +
+                    (note ? '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;line-height:1.4;">' + note + '</div>' : '') + '</td>' +
                 '<td>' + urStatusChip(sevToStatus(row.severity || 0)) + '</td>' +
-                '<td>' + (mlItem ? ptsHtml(mlHalf) : dash()) + '</td>' +
-                '<td>' + ptsHtml(panelHalf) + '</td>' +
                 '<td>' + ptsHtml(effect) + '</td>' +
                 '<td><strong>' + Math.round(running * 100) + '</strong></td></tr>';
+        }
+
+        /* Voice group first, then words — biggest combined effect first
+           within each group, "no data" rows last. Running total is
+           continuous across the groups. */
+        ['voice', 'words'].forEach(function(g) {
+            var rows = pred.panel_breakdown.filter(function(r) { return PANEL_GROUP[r.feature] === g; })
+                .sort(function(r1, r2) {
+                    if (!r1.available) return 1;
+                    if (!r2.available) return -1;
+                    return Math.abs(rowEffect(r2)) - Math.abs(rowEffect(r1));
+                });
+            if (!rows.length) return;
+            calcHtml += groupHeader(g);
+            rows.forEach(function(row) { calcHtml += panelRowHtml(row); });
         });
 
         /* ML features with no panel row (legacy v1 screenings) still get shown */
@@ -1518,8 +1602,9 @@ function populateUnifiedReport(data) {
                     ' <span style="font-size:10px;color:var(--text-muted);">(model only)</span></td>' +
                 '<td>' + dash() + '</td>' +
                 '<td style="font-size:12px;color:var(--text-muted);">' + getFeatureDesc(item.feature, features) + '</td>' +
-                '<td>' + dash() + '</td><td>' + ptsHtml(half) + '</td><td>' + dash() + '</td>' +
-                '<td>' + ptsHtml(half) + '</td><td><strong>' + Math.round(running * 100) + '</strong></td></tr>';
+                '<td>' + dash() + '</td>' +
+                '<td>' + ptsHtml(half) + '</td>' +
+                '<td><strong>' + Math.round(running * 100) + '</strong></td></tr>';
         });
 
         /* Final reconciliation row — running total must equal the headline score */
@@ -1527,30 +1612,43 @@ function populateUnifiedReport(data) {
             '<td><strong>Final blended score</strong></td><td>' + dash() + '</td>' +
             '<td style="font-size:12px;">(' + Math.round(mlScore * 100) + ' + ' + Math.round(pred.panel_score * 100) +
                 ') ÷ 2 — equals base + all effects above</td>' +
-            '<td>' + dash() + '</td><td>' + dash() + '</td><td>' + dash() + '</td>' +
+            '<td>' + dash() + '</td>' +
             '<td><strong>=</strong></td>' +
             '<td><strong style="color:' + color + ';">' + score + '</strong></td></tr>';
     } else {
-        /* ── Legacy single waterfall (results saved before panel scoring) ── */
+        /* ── Legacy single waterfall (results saved before panel scoring),
+           grouped the same way: voice first, then words ── */
+        var LEGACY_ACOUSTIC = ['pause_ratio','pause_duration_mean','pitch_std_hz','short_utterance_count',
+            'duration_seconds','jitter','shimmer','hnr','spectral_centroid','spectral_rolloff',
+            'response_latency','articulation_rate','phonemes_per_second','zero_crossing_rate'];
         running = base;
         calcHtml += '<tr style="background:var(--bg);">' +
             '<td><strong>Model base</strong></td><td>' + dash() + '</td>' +
             '<td style="font-size:12px;color:var(--text-muted);">Model average before this patient\'s features</td>' +
-            '<td>' + dash() + '</td><td>' + dash() + '</td><td>' + dash() + '</td><td>' + dash() + '</td>' +
+            '<td>' + dash() + '</td><td>' + dash() + '</td>' +
             '<td><strong>' + Math.round(base * 100) + '</strong></td></tr>';
-        shap.forEach(function(item) {
-            running += item.impact;
-            calcHtml += '<tr>' +
-                '<td>' + getFeatureIcon(item.feature) + ' ' + formatFeatureName(item.feature) + '</td>' +
-                '<td>' + dash() + '</td>' +
-                '<td style="font-size:12px;color:var(--text-muted);">' + getFeatureDesc(item.feature, features) + '</td>' +
-                '<td>' + dash() + '</td><td>' + ptsHtml(item.impact) + '</td><td>' + dash() + '</td>' +
-                '<td>' + ptsHtml(item.impact) + '</td><td><strong>' + Math.round(running * 100) + '</strong></td></tr>';
+        ['voice', 'words'].forEach(function(g) {
+            var items = shap.filter(function(it) {
+                var isAc = LEGACY_ACOUSTIC.indexOf(it.feature) !== -1;
+                return g === 'voice' ? isAc : !isAc;
+            });
+            if (!items.length) return;
+            calcHtml += groupHeader(g);
+            items.forEach(function(item) {
+                running += item.impact;
+                calcHtml += '<tr>' +
+                    '<td>' + getFeatureIcon(item.feature) + ' ' + formatFeatureName(item.feature) + '</td>' +
+                    '<td>' + dash() + '</td>' +
+                    '<td style="font-size:12px;color:var(--text-muted);">' + getFeatureDesc(item.feature, features) + '</td>' +
+                    '<td>' + dash() + '</td>' +
+                    '<td>' + ptsHtml(item.impact) + '</td>' +
+                    '<td><strong>' + Math.round(running * 100) + '</strong></td></tr>';
+            });
         });
         calcHtml += '<tr style="background:#eef2ff;border-top:2px solid var(--accent);">' +
             '<td><strong>Final score</strong></td><td>' + dash() + '</td>' +
             '<td style="font-size:12px;">Base + all contributions (matches the score above)</td>' +
-            '<td>' + dash() + '</td><td>' + dash() + '</td><td>' + dash() + '</td><td><strong>=</strong></td>' +
+            '<td>' + dash() + '</td><td>' + dash() + '</td><td><strong>=</strong></td>' +
             '<td><strong style="color:' + color + ';">' + score + '</strong></td></tr>';
     }
     document.getElementById('ur-calc').innerHTML = calcHtml;
