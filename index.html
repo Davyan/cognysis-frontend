@@ -647,7 +647,9 @@
                     <div class="status initiated" id="live-status" style="font-size: 32px; font-weight: 800; margin: 12px 0;">LOADING...</div>
                     <div class="timer" id="live-timer" style="font-size: 14px; color: #6b7280; margin-top: 8px;"><span class="spinner"></span> Connecting to server...</div>
                 </div>
-                <div class="card hidden" id="live-analysis-card">
+                <!-- Hidden per demo request: live stats card removed from the monitor.
+                     JS still populates it harmlessly; delete display:none to bring it back. -->
+                <div class="card hidden" id="live-analysis-card" style="display:none;">
                     <div class="card-header"><div class="card-title">📊 Live Analysis</div></div>
                     <div class="grid-3">
                         <div class="stat-card"><div class="stat-label">Patient Words</div><div class="stat-value" style="color: #111827;" id="live-patient-words">0</div></div>
@@ -738,7 +740,8 @@
                     <audio id="review-audio" style="display:none;"></audio>
                 </div>
 
-                <!-- 3b. WHAT WAS ANALYSED (call-based screenings only) -->
+                <!-- 3b. WHAT WAS ANALYSED (call-based screenings only) — hidden per demo request.
+                     The analysis still happens server-side; populateResponseAnalysis keeps this card hidden. -->
                 <div class="card" id="ur-analysis-card" style="display:none;">
                     <div class="card-header">
                         <div class="card-title">What Was Analysed</div>
@@ -781,7 +784,7 @@
                 <div class="card">
                     <div class="card-header">
                         <div class="card-title">How This Score Was Calculated</div>
-                        <span class="badge badge-info">One table — every feature, both halves, verifiable arithmetic</span>
+                        <span class="badge badge-info">One table — every feature, verifiable arithmetic</span>
                     </div>
                     <div id="ur-calc-summary" style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;"></div>
                     <table class="marker-table">
@@ -790,8 +793,6 @@
                             <th>Weight</th>
                             <th>Measured · normal range</th>
                             <th>Status</th>
-                            <th>ML model ×½</th>
-                            <th>Panel ×½</th>
                             <th>Effect on score</th>
                             <th>Running total</th>
                         </tr></thead>
