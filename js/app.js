@@ -1333,9 +1333,13 @@ function populateUnifiedReport(data) {
     var transcript = l.transcript || '';
     var tBox = document.getElementById('ur-transcript');
     if (transcript) {
-        var html = '<div class="transcript-line"><div class="transcript-speaker">AI INTERVIEWER</div><div class="transcript-text">' +
-            INTERVIEW_QUESTIONS[0].q +
-            ' <span style="font-size:10px;color:var(--text-muted);">(' + INTERVIEW_QUESTIONS[0].basis + ')</span></div></div>';
+        /* Uploads contain only the patient — no interviewer line there */
+        var html = '';
+        if (data.source !== 'upload') {
+            html += '<div class="transcript-line"><div class="transcript-speaker">AI INTERVIEWER</div><div class="transcript-text">' +
+                INTERVIEW_QUESTIONS[0].q +
+                ' <span style="font-size:10px;color:var(--text-muted);">(' + INTERVIEW_QUESTIONS[0].basis + ')</span></div></div>';
+        }
         html += '<div class="transcript-line"><div class="transcript-speaker">PATIENT</div><div class="transcript-text">';
         var fillerWords = ['um','uh','erm','hmm','ah','er'];
         var vagueWords = ['thing','things','stuff','something','someone','somewhere'];
@@ -1625,8 +1629,7 @@ function populateUnifiedReport(data) {
         /* Final reconciliation row — running total must equal the headline score */
         calcHtml += '<tr style="background:#eef2ff;border-top:2px solid var(--accent);">' +
             '<td><strong>Final blended score</strong></td><td>' + dash() + '</td>' +
-            '<td style="font-size:12px;">(' + Math.round(mlScore * 100) + ' × 0.75) + (' + Math.round(pred.panel_score * 100) +
-                ' × 0.25) — equals base + all effects above</td>' +
+            '<td style="font-size:12px;">Total</td>' +
             '<td>' + dash() + '</td>' +
             '<td><strong>=</strong></td>' +
             '<td><strong style="color:' + color + ';">' + score + '</strong></td></tr>';
