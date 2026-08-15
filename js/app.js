@@ -514,7 +514,9 @@ function populateResults(data) {
     var score = Math.round(pred.risk_score * 100);
     var level = pred.risk_level;
     var color = level === 'high' ? '#ef4444' : level === 'moderate' ? '#f59e0b' : '#10b981';
-    var p = state.patient;
+    // state.patient is empty after a mid-call page refresh (polling survives
+    // via localStorage, in-memory state doesn't) — never crash the report.
+    var p = state.patient || {};
 
     document.getElementById('res-name').textContent = p.first + ' ' + p.last;
     document.getElementById('res-avatar').textContent = (p.first[0] + p.last[0]).toUpperCase();
@@ -990,14 +992,27 @@ async function autoAnalyzeCallRecording(callData) {
         // Call recordings play back through the backend proxy for marker review.
         state.reviewAudioUrl = callData.recording_download_url ? (API + callData.recording_download_url) : null;
 
-        populateFeatureExtraction(data);
-        populateAnalysis(data);
-        populateResults(data);
-        populateExplainability(data);
-        populateUnifiedReport(data);
+        // Populate every results tab. A failure here must NOT strand the user
+        // on the live-call tab — the screening is already saved server-side,
+        // so fall back to loading the stored record (the history "View" path).
+        var populated = true;
+        try {
+            populateFeatureExtraction(data);
+            populateAnalysis(data);
+            populateResults(data);
+            populateExplainability(data);
+            populateUnifiedReport(data);
+        } catch (popErr) {
+            populated = false;
+            console.error('Direct populate failed — falling back to stored screening:', popErr);
+        }
 
         await loadHistory();   // backend already saved this screening
-        navTo('report');
+        if (populated) {
+            navTo('report');
+        } else {
+            await loadScreening(data.screening_id);  // repopulates + navigates
+        }
         showToast('Call analysis complete — see Unified Report');
     } catch (e) {
         console.error('Auto-analysis failed:', e);
@@ -1028,7 +1043,7 @@ function startLiveCallPolling(callId) {
     document.getElementById('live-transcript').innerHTML = 
         '<div style="text-align: center; padding: 40px; color: #9ca3af;">' +
         '<span class="spinner" style="display: inline-block; width: 20px; height: 20px; border: 3px solid #e5e7eb; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; vertical-align: middle;"></span>' +
-        '<p>Waiting for call to begin...</p></div>';
+        '<p>Transcript loading...</p></div>';
     navTo('live-call');
     pollLiveCall();
     if (liveCallPollInterval) clearInterval(liveCallPollInterval);
@@ -1294,7 +1309,9 @@ function populateUnifiedReport(data) {
     var score = Math.round(pred.risk_score * 100);
     var level = pred.risk_level;
     var color = level === 'high' ? '#ef4444' : level === 'moderate' ? '#f59e0b' : '#10b981';
-    var p = state.patient;
+    // state.patient is empty after a mid-call page refresh (polling survives
+    // via localStorage, in-memory state doesn't) — never crash the report.
+    var p = state.patient || {};
 
     /* ── 1. Patient + score header ── */
     if (p.first) {
@@ -1416,7 +1433,7 @@ function populateUnifiedReport(data) {
                 '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Recorded memory: "' + mc.core_memory + '"</div>' +
                 '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Matched: ' +
                 (mc.matched_keywords.length ? mc.matched_keywords.join(', ') : 'none') +
-                ' of ' + mc.keywords.join(', ') + '</div></div>';
+                ' of ' + (mc.keywords || []).join(', ') + '</div></div>';
         } else {
             memBox.innerHTML = '';
         }
