@@ -1434,8 +1434,8 @@ function populateUnifiedReport(data) {
 
     /* ── 5+6. UNIFIED SCORE BREAKDOWN ──
        One table: every slide feature appears exactly once, showing BOTH
-       halves of the hybrid score. Each row's "effect" is already halved
-       (½·ML impact + ½·panel contribution), so base + all rows = final
+       halves of the hybrid score. Each row's "effect" is already weighted
+       (0.75·ML impact + 0.25·panel contribution), so base + all rows = final
        score exactly — assessors can verify the arithmetic on screen.
        Identical for calls and uploads (same /screen data shape); falls
        back to a plain ML waterfall for legacy results without a panel. */
@@ -1446,6 +1446,10 @@ function populateUnifiedReport(data) {
     var hasPanel = typeof pred.panel_score === 'number' && Array.isArray(pred.panel_breakdown);
     var mlScore = (typeof pred.ml_score === 'number') ? pred.ml_score : pred.risk_score;
     var base = (typeof pred.base_score === 'number') ? pred.base_score : (mlScore - totalImpact);
+
+    /* Hybrid blend weights — MUST match ML_WEIGHT/PANEL_WEIGHT in services/ml.py.
+       Every effect below is pre-weighted so base + all rows = final score exactly. */
+    var ML_WEIGHT = 0.75, PANEL_WEIGHT = 0.25;
 
     /* v2 model feature -> panel row key (the 11 measurable slide features) */
     var FEATURE_TO_PANEL = {
@@ -1494,9 +1498,9 @@ function populateUnifiedReport(data) {
     var summaryEl = document.getElementById('ur-calc-summary');
     if (summaryEl) {
         summaryEl.innerHTML = hasPanel
-            ? 'Final score <strong>' + score + '</strong> = ½ × ML model (<strong>' + Math.round(mlScore * 100) + '</strong>) + ' +
-              '½ × clinical panel (<strong>' + Math.round(pred.panel_score * 100) + '</strong>). Each row\'s <strong>Effect on score</strong> ' +
-              'already combines both halves, so <strong>base + all rows = the final score exactly</strong>. ' +
+            ? 'Final score <strong>' + score + '</strong> = 75% × ML model (<strong>' + Math.round(mlScore * 100) + '</strong>) + ' +
+              '25% × clinical panel (<strong>' + Math.round(pred.panel_score * 100) + '</strong>). Each row\'s <strong>Effect on score</strong> ' +
+              'already combines both parts at their 75/25 weights, so <strong>base + all rows = the final score exactly</strong>. ' +
               '<span style="color:var(--danger);font-weight:600;">Red = pushes risk up</span>, ' +
               '<span style="color:var(--success);font-weight:600;">green = protective</span>. Biggest effects first within each group.'
             : 'Values are SHAP contributions: base risk + all contributions = final score. ' +
@@ -1533,14 +1537,14 @@ function populateUnifiedReport(data) {
     }
 
     if (hasPanel) {
-        /* Base row — the model average, halved (its share of the final score) */
-        running += base * 0.5;
+        /* Base row — the model average × the ML weight (its share of the final score) */
+        running += base * ML_WEIGHT;
         calcHtml += '<tr style="background:var(--bg);">' +
             '<td><strong>Model base</strong></td><td>' + dash() + '</td>' +
             '<td style="font-size:12px;color:var(--text-muted);">Population average before this patient\'s features</td>' +
             '<td>' + dash() + '</td>' +
-            '<td>' + ptsHtml(base * 0.5) + '</td>' +
-            '<td>' + Math.round(running * 100) + '</td></tr>';
+            '<td>' + ptsHtml(base * ML_WEIGHT) + '</td>' +
+            '<td>' + Math.round((running + 1e-9) * 100) + '</td></tr>';
 
         /* Map ML impacts onto their panel rows */
         var impactByPanel = {};
@@ -1553,7 +1557,7 @@ function populateUnifiedReport(data) {
 
         function rowEffect(row) {
             var ml = impactByPanel[row.feature];
-            return (ml ? ml.impact * 0.5 : 0) + (row.contribution || 0) * 0.5;
+            return (ml ? ml.impact * ML_WEIGHT : 0) + (row.contribution || 0) * PANEL_WEIGHT;
         }
         function panelRowHtml(row) {
             var wColor = wColorOf(row.weight_label);
@@ -1575,14 +1579,25 @@ function populateUnifiedReport(data) {
                     (note ? '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;line-height:1.4;">' + note + '</div>' : '') + '</td>' +
                 '<td>' + urStatusChip(sevToStatus(row.severity || 0)) + '</td>' +
                 '<td>' + ptsHtml(effect) + '</td>' +
-                '<td><strong>' + Math.round(running * 100) + '</strong></td></tr>';
+                '<td><strong>' + Math.round((running + 1e-9) * 100) + '</strong></td></tr>';
+        }
+
+        /* Rows that carry no information are hidden entirely:
+           - Semantic Coherence: never extracted in this prototype.
+           - Response Timing on uploads: no interviewer turns exist, so the
+             row is meaningless (severity 0 → contributes nothing anyway).
+           For live calls Response Timing is real and stays visible. */
+        function hideRow(row) {
+            if (row.feature === 'semantic_coherence' && !row.available) return true;
+            if (row.feature === 'response_timing' && /no interviewer turns/.test(row.measured || '')) return true;
+            return false;
         }
 
         /* Voice group first, then words — biggest combined effect first
            within each group, "no data" rows last. Running total is
            continuous across the groups. */
         ['voice', 'words'].forEach(function(g) {
-            var rows = pred.panel_breakdown.filter(function(r) { return PANEL_GROUP[r.feature] === g; })
+            var rows = pred.panel_breakdown.filter(function(r) { return PANEL_GROUP[r.feature] === g && !hideRow(r); })
                 .sort(function(r1, r2) {
                     if (!r1.available) return 1;
                     if (!r2.available) return -1;
@@ -1595,7 +1610,7 @@ function populateUnifiedReport(data) {
 
         /* ML features with no panel row (legacy v1 screenings) still get shown */
         unmatched.forEach(function(item) {
-            var half = item.impact * 0.5;
+            var half = item.impact * ML_WEIGHT;
             running += half;
             calcHtml += '<tr>' +
                 '<td>' + getFeatureIcon(item.feature) + ' ' + formatFeatureName(item.feature) +
@@ -1604,14 +1619,14 @@ function populateUnifiedReport(data) {
                 '<td style="font-size:12px;color:var(--text-muted);">' + getFeatureDesc(item.feature, features) + '</td>' +
                 '<td>' + dash() + '</td>' +
                 '<td>' + ptsHtml(half) + '</td>' +
-                '<td><strong>' + Math.round(running * 100) + '</strong></td></tr>';
+                '<td><strong>' + Math.round((running + 1e-9) * 100) + '</strong></td></tr>';
         });
 
         /* Final reconciliation row — running total must equal the headline score */
         calcHtml += '<tr style="background:#eef2ff;border-top:2px solid var(--accent);">' +
             '<td><strong>Final blended score</strong></td><td>' + dash() + '</td>' +
-            '<td style="font-size:12px;">(' + Math.round(mlScore * 100) + ' + ' + Math.round(pred.panel_score * 100) +
-                ') ÷ 2 — equals base + all effects above</td>' +
+            '<td style="font-size:12px;">(' + Math.round(mlScore * 100) + ' × 0.75) + (' + Math.round(pred.panel_score * 100) +
+                ' × 0.25) — equals base + all effects above</td>' +
             '<td>' + dash() + '</td>' +
             '<td><strong>=</strong></td>' +
             '<td><strong style="color:' + color + ';">' + score + '</strong></td></tr>';
@@ -1642,7 +1657,7 @@ function populateUnifiedReport(data) {
                     '<td style="font-size:12px;color:var(--text-muted);">' + getFeatureDesc(item.feature, features) + '</td>' +
                     '<td>' + dash() + '</td>' +
                     '<td>' + ptsHtml(item.impact) + '</td>' +
-                    '<td><strong>' + Math.round(running * 100) + '</strong></td></tr>';
+                    '<td><strong>' + Math.round((running + 1e-9) * 100) + '</strong></td></tr>';
             });
         });
         calcHtml += '<tr style="background:#eef2ff;border-top:2px solid var(--accent);">' +
